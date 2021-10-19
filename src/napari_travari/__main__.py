@@ -1,18 +1,29 @@
 """Command-line interface."""
+from os import path
+import os
+import io
 import click
+import zarr
+import numpy as np
+import dask.array as da
+import pandas as pd
 import napari
+import logging
+from ._consts import LOGGING_PATH
+from ._viewer import TravariViewer
 
 
 @click.command()
 @click.version_option()
 def main() -> None:
-    subpath=".tracking_log/log.txt"
-    log_path=path.join(path.expanduser("~"),subpath)
+    read_travari=True
+    base_dir = "/home/fukai/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
+    log_path=path.join(path.expanduser("~"),LOGGING_PATH)
     if not path.exists(path.dirname(log_path)):
         os.makedirs(path.dirname(log_path))
+    logger=logging.getLogger()
     logging.basicConfig(filename=log_path,
                         level=logging.INFO)
-
 
     """Napari Travari."""
     zarr_path = path.join(base_dir, "image_total_aligned_small2.zarr")
@@ -82,8 +93,9 @@ def main() -> None:
     _new_segment_id=new_segment_id
 
     # TODO assert all time steps are in the target_Ts
+    _ = TravariViewer()
 
-   napari.run()
+    napari.run()
 
 if __name__ == "__main__":
     main(prog_name="napari-travari")  # pragma: no cover

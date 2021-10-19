@@ -3,8 +3,8 @@ from _logging import get_logger
 
 logger = get_logger()
 
-def choose_by_mbox(_viewer, choices, message):
-    msgBox = QMessageBox(_viewer.window.qt_viewer)
+def __choose_by_mbox(viewer, choices, message):
+    msgBox = QMessageBox(viewer.window.qt_viewer)
     msgBox.setText(message)
     msgBox.setIcon(QMessageBox.Question)
     buttons = []
@@ -23,36 +23,36 @@ def choose_by_mbox(_viewer, choices, message):
     except ValueError:
         return None
 
-def choose_direction_by_mbox(_viewer):
-    return choose_by_mbox(
-        _viewer,
+def choose_direction_by_mbox(viewer):
+    return __choose_by_mbox(
+        viewer,
         ["forward", "backward"],
         "Select the time direction of the new track",
     )
 
-def choose_division_by_mbox(_viewer):
-    return choose_by_mbox(
-        _viewer,
+def choose_division_by_mbox(viewer):
+    return __choose_by_mbox(
+        viewer,
         ["select", "draw"],
         "Select or draw the daughter?",
     )
 
-def ask_draw_label(_viewer):
-    return choose_by_mbox(
-        _viewer,
+def ask_draw_label(viewer):
+    return __choose_by_mbox(
+        viewer,
         ["modify", "new"],
         "Modify label, or create new?"
     )
     
-def ask_ok_or_not(_viewer,message):
-    dialogue_result = choose_by_mbox(
-        _viewer,
+def ask_ok_or_not(viewer,message):
+    dialogue_result = __choose_by_mbox(
+        viewer,
         ["Ok"],
         message
     )
     return dialogue_result=="Ok"
 
-def get_annotation_of_track_end(_viewer):
+def get_annotation_of_track_end(viewer):
     return QInputDialog.getText(
-        _viewer.window.qt_viewer, "Input dialog", "Annotate the track end:"
+        viewer.window.qt_viewer, "Input dialog", "Annotate the track end:"
     )
