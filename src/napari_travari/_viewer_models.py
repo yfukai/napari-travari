@@ -1,8 +1,64 @@
+from enum import Enum
+import numpy as np
+import pandas as pd
+import networkx as nx
+from ._logging import log_error
+from ._consts import *
+from ._gui_utils import ask_draw_label, choose_direction_by_mbox, choose_division_by_mbox, get_annotation_of_track_end
+
+class ViewerState(Enum):
+    ALL_LABEL = 1
+    LABEL_SELECTED = 2
+    LABEL_REDRAW = 3
+    LABEL_SWITCH = 4
+    DAUGHTER_SWITCH = 5
+    DAUGHTER_DRAW = 6
+    DAUGHTER_CHOOSE_MODE = 7
+
+
+viewer_state_visibility = {
+    ViewerState.ALL_LABEL: [True, False, False, True],
+    ViewerState.LABEL_SELECTED: [True, True, False, False],
+    ViewerState.LABEL_REDRAW: [False, False, True, False],
+    ViewerState.LABEL_SWITCH: [True, False, False, True],
+    ViewerState.DAUGHTER_SWITCH: [True, False, False, True],
+    ViewerState.DAUGHTER_DRAW: [False, False, True, False],
+    ViewerState.DAUGHTER_CHOOSE_MODE: [False, True, False, False],
+}
+
+viewer_state_active = {
+    ViewerState.ALL_LABEL: label_layer,
+    ViewerState.LABEL_SELECTED: sel_label_layer,
+    ViewerState.LABEL_REDRAW: redraw_label_layer,
+    ViewerState.LABEL_SWITCH: label_layer,
+    ViewerState.DAUGHTER_SWITCH: label_layer,
+    ViewerState.DAUGHTER_DRAW: redraw_label_layer,
+    ViewerState.DAUGHTER_CHOOSE_MODE: sel_label_layer
+}
+
+def set_visible_layers(visibles):
+    assert len(visibles) == len(layers)
+    for i in range(len(layers)):
+        try:
+            layers[i].visible = visibles[i]
+        except ValueError:
+            pass
+
+
 class ViewerModel:
-    def __init__(self,*,new_segment_id,
+    def __init__(self,
+                 df_segments,
+                 df_divisions,
+                *,
+                 new_segment_id,
                  new_label_value,
                  finalized_segment_ids,
-                 candidate_segment_ids
+                 candidate_segment_ids,
+                 viewer,
+                 label_layer,
+                 redraw_label_layer,
+                 sel_label_layer,
+                 finalized_label_layer,
                  ):
         self.selected_label = None
         self.segment_id = None
@@ -11,6 +67,15 @@ class ViewerModel:
         self.segment_labels = None
         self.label_edited = None
         self.termination_annotation = ""
+
+        self.viewer=viewer
+        self.label_layer=label_layer
+        self.redraw_label_layer=redraw_label_layer
+        self.sel_label_layer=sel_label_layer
+        self.finalized_label_layer=finalized_label_layer
+
+        self.df_segments=df_segments
+        self.df_divisions=df_divisions
         self.new_segment_id = new_segment_id
         self.new_label_value = new_label_value
         self.finalized_segment_ids = finalized_segment_ids
@@ -22,13 +87,13 @@ class ViewerModel:
     @log_error
     def update_layer_status(self,*_):
         set_visible_layers(viewer_state_visibility[self.state])
-        viewer.layers.selection.clear()
-        viewer.layers.selection.add(viewer_state_active[self.state])
+        self.viewer.layers.selection.clear()
+        self.viewer.layers.selection.add(viewer_state_active[self.state])
 
     @log_error
     def refresh_redraw_label_layer(self):
-        redraw_label_layer.data = np.zeros_like(redraw_label_layer.data)
-        redraw_label_layer.mode = "paint"
+        self.redraw_label_layer.data = np.zeros_like(self.redraw_label_layer.data)
+        self.redraw_label_layer.mode = "paint"
 
     @log_error
     def __mask_to_selected_label_image(self, block, block_info=None):
@@ -59,7 +124,7 @@ class ViewerModel:
             return None
         location = block_info[0]["array-location"]
         frame = location[0][0]
-        segments_at_frame = _df_segments.loc[frame]
+        segments_at_frame = self.df_segments.loc[frame]
 
         finalized_labels_at_frame = segments_at_frame[
             segments_at_frame["segment_id"].isin(self.finalized_segment_ids)
@@ -78,7 +143,7 @@ class ViewerModel:
     def select_track(self, frame, val, segment_id):
         self.segment_id = segment_id
         segment_labels = np.ones(image.shape[0], dtype=np.uint32) * NOSEL_VALUE
-        df = _df_segments[_df_segments["segment_id"] == segment_id]
+        df = self.df_segments[self.df_segments["segment_id"] == segment_id]
         frames = df.index.get_level_values("frame").values
         labels = df.index.get_level_values("label").values
         segment_labels[frames] = labels
@@ -86,10 +151,10 @@ class ViewerModel:
         self.label_edited = np.zeros(len(segment_labels), dtype=bool)
         self.segment_labels = segment_labels
         self.original_segment_labels = segment_labels.copy()
-        label_layer.termination_annotation = ""
+        self.label_layer.termination_annotation = ""
         # used to rewrite track on exit
 
-        row = _df_divisions[_df_divisions["segment_id_parent"] == segment_id]
+        row = self.df_divisions[self.df_divisions["segment_id_parent"] == segment_id]
         print(row)
         if len(row) == 1:
             self.frame_childs = list(row.iloc[0][["frame_child1", "frame_child2"]])
@@ -100,20 +165,20 @@ class ViewerModel:
         else:
             return
         print(self.frame_childs, self.label_childs)
-        sel_label_layer.data = label_layer.data.map_blocks(
+        self.sel_label_layer.data = self.label_layer.data.map_blocks(
             self.__mask_to_selected_label_image, dtype=np.uint8
         )
 
     @log_error
     def label_redraw_enter_valid(self):
-        iT = viewer.dims.current_step[0]
+        iT = self.viewer.dims.current_step[0]
         #TODO rewrite to check if 
         # - this timeframe is in target_T 
         # - segment_labels is not NOSEL_VALUE in either of this, previous, next target_T
         if (
-            not np.any(sel_label_layer.data[iT] == 1)
-            and not np.any(sel_label_layer.data[min(iT + 1, sizeT)] == 1)
-            and not np.any(sel_label_layer.data[max(iT - 1, 0)] == 1)
+            not np.any(self.sel_label_layer.data[iT] == 1)
+            and not np.any(self.sel_label_layer.data[min(iT + 1, sizeT)] == 1)
+            and not np.any(self.sel_label_layer.data[max(iT - 1, 0)] == 1)
         ):
             logger.info("track does not exist in connected timeframe")
             return False
@@ -123,34 +188,34 @@ class ViewerModel:
 
     @log_error
     def check_drawn_label(self):
-        return np.any(redraw_label_layer.data == 1)
+        return np.any(self.redraw_label_layer.data == 1)
 
     @log_error
     def label_redraw_finish(self):
         logger.info("label redraw finish")
-        iT = viewer.dims.current_step[0]
+        iT = self.viewer.dims.current_step[0]
         logger.info("label redraw finish")
-        sel_label_layer.data[iT] = 0
-        sel_label_layer.data[iT] = redraw_label_layer.data == 1
+        self.sel_label_layer.data[iT] = 0
+        self.sel_label_layer.data[iT] = self.redraw_label_layer.data == 1
         self.label_edited[iT] = True
         if self.segment_labels[iT] == NOSEL_VALUE:
             self.segment_labels[iT] = NEW_LABEL_VALUE
         else:
-            if ask_draw_label(viewer) == "new":
+            if ask_draw_label(self.viewer) == "new":
                 self.segment_labels[iT] = NEW_LABEL_VALUE
             
 
     @log_error
     def switch_track_enter_valid(self):
-        iT = viewer.dims.current_step[0]
+        iT = self.viewer.dims.current_step[0]
         #TODO rewrite to check if 
         # - this timeframe is in target_T 
         # - segment_labels is not NOSEL_VALUE in either of this, previous, next target_T
         # (make common routine)
         if (
-            not np.any(sel_label_layer.data[iT] == 1)
-            and not np.any(sel_label_layer.data[min(iT + 1, sizeT)] == 1)
-            and not np.any(sel_label_layer.data[max(iT - 1, 0)] == 1)
+            not np.any(self.sel_label_layer.data[iT] == 1)
+            and not np.any(self.sel_label_layer.data[min(iT + 1, sizeT)] == 1)
+            and not np.any(self.sel_label_layer.data[max(iT - 1, 0)] == 1)
         ):
             logger.info("track does not exist in connected timeframe")
             return False
@@ -160,15 +225,15 @@ class ViewerModel:
 
     @log_error
     def switch_track(self, frame, val, segment_id):
-        direction = choose_direction_by_mbox(viewer)
+        direction = choose_direction_by_mbox(self.viewer)
 
         if not direction:
             return
         elif direction == "forward":
             print("forward ... ")
-            df = _df_segments[
-                (_df_segments["segment_id"] == segment_id)
-                & (_df_segments.index.get_level_values("frame") >= frame)
+            df = self.df_segments[
+                (self.df_segments["segment_id"] == segment_id)
+                & (self.df_segments.index.get_level_values("frame") >= frame)
             ]
             frames = df.index.get_level_values("frame").values
             labels = df.index.get_level_values("label").values
@@ -177,7 +242,7 @@ class ViewerModel:
             self.segment_labels[frames] = labels
             self.label_edited[frame:] = False
             #FIXME revert layer to original
-            row = _df_divisions[_df_divisions["segment_id_parent"] == segment_id]
+            row = self.df_divisions[self.df_divisions["segment_id_parent"] == segment_id]
 
             if len(row) == 1:
                 self.frame_childs = row.iloc[0][["frame_child1", "frame_child2"]]
@@ -188,9 +253,9 @@ class ViewerModel:
             self.termination_annotation = ""
 
         elif direction == "backward":
-            df = _df_segments[
-                (_df_segments["segment_id"] == segment_id)
-                & (_df_segments.index.get_level_values("frame") <= frame)
+            df = self.df_segments[
+                (self.df_segments["segment_id"] == segment_id)
+                & (self.df_segments.index.get_level_values("frame") <= frame)
             ]
             frames = df.index.get_level_values("frame").values
             labels = df.index.get_level_values("label").values
@@ -201,9 +266,9 @@ class ViewerModel:
     @log_error
     def daughter_choose_mode_enter_valid(self):
         logger.info("enter daughter choose")
-        iT = viewer.dims.current_step[0]
-        if not np.any(sel_label_layer.data[iT] == 1) and not np.any(
-            sel_label_layer.data[max(iT - 1, 0)] == 1
+        iT = self.viewer.dims.current_step[0]
+        if not np.any(self.sel_label_layer.data[iT] == 1) and not np.any(
+            self.sel_label_layer.data[max(iT - 1, 0)] == 1
         ):
             logger.info("track does not exist in connected timeframe")
             return False
@@ -219,7 +284,7 @@ class ViewerModel:
             self.finalize_daughter()
             self.to_LABEL_SELECTED()
         else:
-            method = choose_division_by_mbox(viewer)
+            method = choose_division_by_mbox(self.viewer)
             logger.info("%s selected", method)
             if method == "select":
                 self.to_DAUGHTER_SWITCH()
@@ -238,7 +303,7 @@ class ViewerModel:
 
     @log_error
     def daughter_draw_finish(self):
-        self.label_child_candidates.append(redraw_label_layer.data == 1)
+        self.label_child_candidates.append(self.redraw_label_layer.data == 1)
 
     @log_error
     def finalize_daughter(self):
@@ -252,8 +317,8 @@ class ViewerModel:
 
     @log_error
     def mark_termination_enter_valid(self):
-        iT = viewer.dims.current_step[0]
-        if not np.any(sel_label_layer.data[iT] == 1):
+        iT = self.viewer.dims.current_step[0]
+        if not np.any(self.sel_label_layer.data[iT] == 1):
             logger.info("track does not exist in connected timeframe")
             return False
         else:
@@ -262,8 +327,8 @@ class ViewerModel:
 
     @log_error
     def mark_termination(self):
-        iT = viewer.dims.current_step[0]
-        termination_annotation, res = get_annotation_of_track_end(viewer)
+        iT = self.viewer.dims.current_step[0]
+        termination_annotation, res = get_annotation_of_track_end(self.viewer)
         if res:
             logger.info("marking termination: {termination_annotation}")
             self.termination_annotation = termination_annotation
@@ -274,7 +339,6 @@ class ViewerModel:
 
     @log_error
     def finalize_track(self):
-        global _df_segments, _df_divisions
         segment_id = self.segment_id
         segment_labels = self.segment_labels
         label_edited = self.label_edited
@@ -287,13 +351,13 @@ class ViewerModel:
         segment_graph=nx.Graph()
         frame_labels=list(enumerate(segment_labels))+list(zip(frame_childs,label_childs))
         relevant_segment_ids = np.unique([
-            _df_segments.loc[(frame,label),"segment_id"] 
+            self.df_segments.loc[(frame,label),"segment_id"] 
             for frame,label in frame_labels 
             if np.isscalar(label) and label != NOSEL_VALUE and label != NEW_LABEL_VALUE ])
         
         last_frames={}
         for relevant_segment_id in relevant_segment_ids:
-            df=_df_segments[_df_segments["segment_id"]==relevant_segment_id] 
+            df=self.df_segments[self.df_segments["segment_id"]==relevant_segment_id] 
             if len(df) ==0:
                 continue
             df=df.sort_index(level='frame')
@@ -309,7 +373,7 @@ class ViewerModel:
         for frame,label in enumerate(segment_labels):
             if label in (NOSEL_VALUE, NEW_LABEL_VALUE): continue
             segment_graph.remove_node((frame,label)) 
-            _df_segments.loc[(frame,label),"segment_id"] = segment_id
+            self.df_segments.loc[(frame,label),"segment_id"] = segment_id
         
         for frame,label in zip(frame_childs,label_childs):
             if not np.isscalar(label):
@@ -326,18 +390,18 @@ class ViewerModel:
         # relavel divided tracks
         for subsegment in nx.connected_components(segment_graph):
             frame_labels=sorted(subsegment,key=lambda x :x[0])
-            original_segment_id = _df_segments.loc[frame_labels,"segment_id"]
+            original_segment_id = self.df_segments.loc[frame_labels,"segment_id"]
             assert np.all(original_segment_id.iloc[0]==original_segment_id)
             original_segment_id=original_segment_id.iloc[0]
             last_frame = last_frames[original_segment_id]
             frames, _ = zip(*frame_labels)
             
-            _df_segments.loc[frame_labels,"segment_id"] = self.new_segment_id
+            self.df_segments.loc[frame_labels,"segment_id"] = self.new_segment_id
             if np.any(frames==last_frame):
-                ind = _df_divisions["segment_id_parent"] == original_segment_id
+                ind = self.df_divisions["segment_id_parent"] == original_segment_id
                 if np.any(ind):
                     assert np.sum(ind) == 1
-                    _df_divisions.loc[ind,"segment_id_parent"] = self.new_segment_id
+                    self.df_divisions.loc[ind,"segment_id_parent"] = self.new_segment_id
             self.new_segment_id += 1
 
         def __draw_label(mask_image,frame,label):
@@ -345,36 +409,36 @@ class ViewerModel:
             __dask_compute = lambda arr : arr.compute() if isinstance(arr,da.Array) else arr
             inds = [__dask_compute(i) for i in np.where(mask_image)]
             bboxes = [(np.min(ind),np.max(ind)+1) for ind in inds]
-            subimg = np.array(label_layer.data[
+            subimg = np.array(self.label_layer.data[
                 frame,0,0,slice(*bboxes[0]),slice(*bboxes[1])])
             subimg[tuple((ind-bbox[0]) for ind,bbox in zip(inds,bboxes))] = label
-            label_layer.data[frame,0,0,slice(*bboxes[0]),slice(*bboxes[1])]=subimg
+            self.label_layer.data[frame,0,0,slice(*bboxes[0]),slice(*bboxes[1])]=subimg
             return bboxes
             
 
         for redrawn_frame in np.where(self.label_edited)[0]:
             label = self.segment_labels[redrawn_frame]
             if not label in [NOSEL_VALUE,NEW_LABEL_VALUE]:
-                __draw_label(label_layer.data[redrawn_frame,0,0]==label,redrawn_frame,0)
+                __draw_label(self.label_layer.data[redrawn_frame,0,0]==label,redrawn_frame,0)
             else:
                 label=self.new_label_value
-                _df_segments=_df_segments.append(pd.Series(
+                self.df_segments=self.df_segments.append(pd.Series(
                     {"segment_id":segment_id},name=(redrawn_frame,label)
                 ))
                 self.new_label_value+=1
             
-            bboxes = __draw_label(sel_label_layer.data[redrawn_frame,0,0]==1,
+            bboxes = __draw_label(self.sel_label_layer.data[redrawn_frame,0,0]==1,
                                   redrawn_frame,label)
             # set bounding box
-            _df_segments.loc[(redrawn_frame,label),"bbox_y0"]=bboxes[0][0]
-            _df_segments.loc[(redrawn_frame,label),"bbox_y1"]=bboxes[0][1]
-            _df_segments.loc[(redrawn_frame,label),"bbox_x0"]=bboxes[1][0]
-            _df_segments.loc[(redrawn_frame,label),"bbox_x1"]=bboxes[1][1]
+            self.df_segments.loc[(redrawn_frame,label),"bbox_y0"]=bboxes[0][0]
+            self.df_segments.loc[(redrawn_frame,label),"bbox_y1"]=bboxes[0][1]
+            self.df_segments.loc[(redrawn_frame,label),"bbox_x0"]=bboxes[1][0]
+            self.df_segments.loc[(redrawn_frame,label),"bbox_x1"]=bboxes[1][1]
 
-        ind = _df_divisions["segment_id_parent"] == segment_id
+        ind = self.df_divisions["segment_id_parent"] == segment_id
         if np.any(ind):
             assert np.sum(ind) == 1
-            _df_divisions=_df_divisions[~ind]
+            self.df_divisions=self.df_divisions[~ind]
             self.new_segment_id += 1
 
         if len(frame_childs) > 0 and len(label_childs) > 0:
@@ -387,14 +451,14 @@ class ViewerModel:
                 if np.isscalar(label_child):
                     #means the daughter was selected
                     division_row[f"label_child{j+1}"]=label_child
-                    segment_id_child=_df_segments.loc[(frame_child,label_child),
+                    segment_id_child=self.df_segments.loc[(frame_child,label_child),
                                                       "segment_id"]
                 else:
                     bboxes = __draw_label(label_child[0],
                                           frame_child,
                                           self.new_label_value)
                     division_row[f"label_child{j+1}"]=self.new_label_value
-                    _df_segments=_df_segments.append(pd.Series(
+                    self.df_segments=self.df_segments.append(pd.Series(
                         {
                             "segment_id":self.new_segment_id,
                             "bbox_y0":bboxes[0][0],
@@ -410,11 +474,11 @@ class ViewerModel:
                 if not segment_id_child in self.finalized_segment_ids:
                     logger.info(f"candidate adding ... {segment_id_child}")
                     self.candidate_segment_ids.add(segment_id_child)
-            _df_divisions=_df_divisions.append(division_row,ignore_index=True)
+            self.df_divisions=self.df_divisions.append(division_row,ignore_index=True)
 
         self.finalized_segment_ids.add(segment_id)
         self.candidate_segment_ids.discard(segment_id)
 
-        finalized_label_layer.data=label_layer.data.map_blocks(
+        self.finalized_label_layer.data=self.label_layer.data.map_blocks(
             self.__mask_to_finalized_mask, dtype=np.uint8
         )
