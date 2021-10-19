@@ -482,3 +482,4 @@ class ViewerModel:
         self.finalized_label_layer.data=self.label_layer.data.map_blocks(
             self.__mask_to_finalized_mask, dtype=np.uint8
         )
+
