@@ -1,4 +1,4 @@
-from ._viewer_states import ViewerState
+from ._viewer_model import ViewerState
 
 transitions = [
     {
