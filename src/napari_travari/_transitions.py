@@ -96,4 +96,3 @@ transitions = [
         "before": "mark_termination",
     },
  ]
-
