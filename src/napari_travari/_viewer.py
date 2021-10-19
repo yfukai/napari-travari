@@ -1,7 +1,11 @@
 import napari
 import numpy as np
+from dask import array as da
+from ._viewer_model import ViewerModel, ViewerState
+from ._transitions import transitions
+from transitions import Machine
 
-def get_viewer(image, mask, new_segment_id = None, new_label_value = None, finzlie):
+def get_viewer(image, mask, new_segment_id = None, new_label_value = None):
     viewer = napari.Viewer()
     contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
     viewer.add_image(image, contrast_limits=contrast_limits)
@@ -53,7 +57,7 @@ def get_viewer(image, mask, new_segment_id = None, new_label_value = None, finzl
             frame = cords[0]
             logger.info("%s %i %s",msg,frame,val)
 
-            row = _df_segments.xs((cords[0], val), level=("frame", "label"))
+            row = viewer_model.df_segments.xs((cords[0], val), level=("frame", "label"))
             if len(row) != 1:
                 return
             logger.info(row)

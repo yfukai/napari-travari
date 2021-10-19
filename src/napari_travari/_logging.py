@@ -1,18 +1,10 @@
 import logging
-import os
-from os import path
 import traceback
 from functools import wraps
 
-
-def get_logger(subpath=".tracking_log/log.txt"):
-    log_path=path.join(path.expanduser("~"),subpath)
-    if not path.exists(path.dirname(log_path)):
-        os.makedirs(path.dirname(log_path))
-    logging.basicConfig(filename=log_path,
-                        level=logging.INFO)
-    logger=logging.getLogger(__name__)
-    return logger
+logger=logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+logger.propagate = True
 
 def log_error(func):
     @wraps(func)

@@ -1,8 +1,9 @@
 from enum import Enum
 import numpy as np
+import dask.array as da
 import pandas as pd
 import networkx as nx
-from ._logging import log_error
+from ._logging import logger,log_error
 from ._consts import *
 from ._gui_utils import ask_draw_label, choose_direction_by_mbox, choose_division_by_mbox, get_annotation_of_track_end
 
@@ -14,36 +15,6 @@ class ViewerState(Enum):
     DAUGHTER_SWITCH = 5
     DAUGHTER_DRAW = 6
     DAUGHTER_CHOOSE_MODE = 7
-
-
-viewer_state_visibility = {
-    ViewerState.ALL_LABEL: [True, False, False, True],
-    ViewerState.LABEL_SELECTED: [True, True, False, False],
-    ViewerState.LABEL_REDRAW: [False, False, True, False],
-    ViewerState.LABEL_SWITCH: [True, False, False, True],
-    ViewerState.DAUGHTER_SWITCH: [True, False, False, True],
-    ViewerState.DAUGHTER_DRAW: [False, False, True, False],
-    ViewerState.DAUGHTER_CHOOSE_MODE: [False, True, False, False],
-}
-
-viewer_state_active = {
-    ViewerState.ALL_LABEL: label_layer,
-    ViewerState.LABEL_SELECTED: sel_label_layer,
-    ViewerState.LABEL_REDRAW: redraw_label_layer,
-    ViewerState.LABEL_SWITCH: label_layer,
-    ViewerState.DAUGHTER_SWITCH: label_layer,
-    ViewerState.DAUGHTER_DRAW: redraw_label_layer,
-    ViewerState.DAUGHTER_CHOOSE_MODE: sel_label_layer
-}
-
-def set_visible_layers(visibles):
-    assert len(visibles) == len(layers)
-    for i in range(len(layers)):
-        try:
-            layers[i].visible = visibles[i]
-        except ValueError:
-            pass
-
 
 class ViewerModel:
     def __init__(self,
@@ -73,6 +44,8 @@ class ViewerModel:
         self.redraw_label_layer=redraw_label_layer
         self.sel_label_layer=sel_label_layer
         self.finalized_label_layer=finalized_label_layer
+        self.shape=label_layer.data.shape
+        self.sizeT=label_layer.data.shape[0]
 
         self.df_segments=df_segments
         self.df_divisions=df_divisions
@@ -84,11 +57,38 @@ class ViewerModel:
             self.__mask_to_finalized_mask, dtype=np.uint8
         )
 
+        self.viewer_state_active = {
+            ViewerState.ALL_LABEL: self.label_layer,
+            ViewerState.LABEL_SELECTED: self.sel_label_layer,
+            ViewerState.LABEL_REDRAW: self.redraw_label_layer,
+            ViewerState.LABEL_SWITCH: self.label_layer,
+            ViewerState.DAUGHTER_SWITCH: self.label_layer,
+            ViewerState.DAUGHTER_DRAW: self.redraw_label_layer,
+            ViewerState.DAUGHTER_CHOOSE_MODE: self.sel_label_layer
+        }
+        self.layers = [label_layer, sel_label_layer, redraw_label_layer, finalized_label_layer]
+        self.viewer_state_visibility = {
+            ViewerState.ALL_LABEL: [True, False, False, True],
+            ViewerState.LABEL_SELECTED: [True, True, False, False],
+            ViewerState.LABEL_REDRAW: [False, False, True, False],
+            ViewerState.LABEL_SWITCH: [True, False, False, True],
+            ViewerState.DAUGHTER_SWITCH: [True, False, False, True],
+            ViewerState.DAUGHTER_DRAW: [False, False, True, False],
+            ViewerState.DAUGHTER_CHOOSE_MODE: [False, True, False, False],
+        }
+
     @log_error
     def update_layer_status(self,*_):
-        set_visible_layers(viewer_state_visibility[self.state])
+        visibles=self.viewer_state_visibility[self.state]
+        assert len(visibles) == len(self.layers)
+        for i in range(len(self.layers)):
+            try:
+                self.layers[i].visible = visibles[i]
+            except ValueError:
+                pass
+
         self.viewer.layers.selection.clear()
-        self.viewer.layers.selection.add(viewer_state_active[self.state])
+        self.viewer.layers.selection.add(self.viewer_state_active[self.state])
 
     @log_error
     def refresh_redraw_label_layer(self):
@@ -142,7 +142,7 @@ class ViewerModel:
     @log_error
     def select_track(self, frame, val, segment_id):
         self.segment_id = segment_id
-        segment_labels = np.ones(image.shape[0], dtype=np.uint32) * NOSEL_VALUE
+        segment_labels = np.ones(self.sizeT, dtype=np.uint32) * NOSEL_VALUE
         df = self.df_segments[self.df_segments["segment_id"] == segment_id]
         frames = df.index.get_level_values("frame").values
         labels = df.index.get_level_values("label").values
@@ -177,7 +177,7 @@ class ViewerModel:
         # - segment_labels is not NOSEL_VALUE in either of this, previous, next target_T
         if (
             not np.any(self.sel_label_layer.data[iT] == 1)
-            and not np.any(self.sel_label_layer.data[min(iT + 1, sizeT)] == 1)
+            and not np.any(self.sel_label_layer.data[min(iT + 1, self.sizeT)] == 1)
             and not np.any(self.sel_label_layer.data[max(iT - 1, 0)] == 1)
         ):
             logger.info("track does not exist in connected timeframe")
@@ -214,7 +214,7 @@ class ViewerModel:
         # (make common routine)
         if (
             not np.any(self.sel_label_layer.data[iT] == 1)
-            and not np.any(self.sel_label_layer.data[min(iT + 1, sizeT)] == 1)
+            and not np.any(self.sel_label_layer.data[min(iT + 1, self.sizeT)] == 1)
             and not np.any(self.sel_label_layer.data[max(iT - 1, 0)] == 1)
         ):
             logger.info("track does not exist in connected timeframe")

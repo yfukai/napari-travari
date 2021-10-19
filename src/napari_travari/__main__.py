@@ -6,6 +6,14 @@ import napari
 @click.command()
 @click.version_option()
 def main() -> None:
+    subpath=".tracking_log/log.txt"
+    log_path=path.join(path.expanduser("~"),subpath)
+    if not path.exists(path.dirname(log_path)):
+        os.makedirs(path.dirname(log_path))
+    logging.basicConfig(filename=log_path,
+                        level=logging.INFO)
+
+
     """Napari Travari."""
     zarr_path = path.join(base_dir, "image_total_aligned_small2.zarr")
     #%%
@@ -75,25 +83,7 @@ def main() -> None:
 
     # TODO assert all time steps are in the target_Ts
 
-    viewer = napari.Viewer()
-    contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
-    viewer.add_image(image, contrast_limits=contrast_limits)
-    label_layer = viewer.add_labels(mask, name="Mask")
-    sel_label_layer = viewer.add_labels(
-        da.zeros_like(mask, dtype=np.uint8), name="Selected Mask"
-    )
-    sel_label_layer.contour=3
-    redraw_label_layer = viewer.add_labels(
-        np.zeros(mask.shape[-3:], dtype=np.uint8), name="Drawing"
-    )
-    finalized_label_layer = viewer.add_labels(
-        da.zeros_like(mask, dtype=np.uint8), name="Finalized",
-       # color ={1:"red"}, not working
-        opacity=1.0,blending="opaque"
-    )
-    finalized_label_layer.contour=3
-
-    napari.run()
+   napari.run()
 
 if __name__ == "__main__":
     main(prog_name="napari-travari")  # pragma: no cover
