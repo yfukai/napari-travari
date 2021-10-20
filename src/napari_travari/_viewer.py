@@ -2,24 +2,28 @@ import napari
 import numpy as np
 from dask import array as da
 from transitions import Machine
+import zarr
 from ._viewer_model import ViewerModel, ViewerState
 from ._transitions import transitions
 from ._logging import log_error, logger
 
-def load_data(zarr_path):
-    return 
 
 # XXX tenative implementation : pluginfy later.
 class TravariViewer:
-    def __init__(self, image, mask, 
+    def __init__(self, 
+                 image, mask, 
+                 df_segments,
+                 df_divisions,
                  zarr_path,
                  data_chunk,
-                 new_segment_id = None, 
-                 new_label_value = None,
-                 finalized_segment_ids = None,
-                 candidate_segment_ids = None,
+                 new_segment_id, 
+                 new_label_value,
+                 finalized_segment_ids,
+                 candidate_segment_ids,
                  ):
 
+        self.zarr_path = zarr_path
+        self.data_chunk = data_chunk
 
         self.viewer = napari.Viewer()
         contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
@@ -41,6 +45,8 @@ class TravariViewer:
 
         self.viewer_model = ViewerModel(
             self,
+            df_segments,
+            df_divisions,
             new_segment_id=new_segment_id,
             new_label_value=new_label_value,
             finalized_segment_ids=finalized_segment_ids,

@@ -34,7 +34,7 @@ def main() -> None:
     zarr_file = zarr.open(zarr_path, "r")
 
     image = da.from_zarr(zarr_file["image"]).persist()
-    chunks = zarr_file["image"].chunks
+    data_chunk = zarr_file["image"].chunks
 
     segment_columns = ["segment_id","bbox_y0","bbox_y1","bbox_x0","bbox_x1"]
     division_columns=["segment_id_parent","frame_child1","label_child1","frame_child2","label_child2"]
@@ -58,7 +58,6 @@ def main() -> None:
         candidate_segment_ids=set(mask_ds.attrs["candidate_segment_ids"])
     #    candidate_segment_ids=set()
 
-    sizeT = mask.shape[0]
     df_segments2 = pd.read_csv(
         df_segments2_buf,
         index_col=["frame", "label"],
@@ -88,13 +87,22 @@ def main() -> None:
     # TODO set value of label_layer to zero at timeframes not in target_Ts 
 
     #%%
-    _df_segments=df_segments2.copy()
-    _df_divisions=df_divisions2.copy()
-    _new_segment_id=new_segment_id
+    df_segments=df_segments2.copy()
+    df_divisions=df_divisions2.copy()
+    new_segment_id=new_segment_id
 
     # TODO assert all time steps are in the target_Ts
-    _ = TravariViewer()
-
+    _ = TravariViewer(
+                 image, mask, 
+                 df_segments,
+                 df_divisions,
+                 zarr_path,
+                 data_chunk,
+                 new_segment_id, 
+                 new_label_value,
+                 finalized_segment_ids,
+                 candidate_segment_ids,
+                 )
     napari.run()
 
 if __name__ == "__main__":
