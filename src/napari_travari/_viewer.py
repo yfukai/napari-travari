@@ -6,33 +6,41 @@ from ._viewer_model import ViewerModel, ViewerState
 from ._transitions import transitions
 from ._logging import log_error, logger
 
+def load_data(zarr_path):
+    return 
+
+# XXX tenative implementation : pluginfy later.
 class TravariViewer:
     def __init__(self, image, mask, 
+                 zarr_path,
+                 data_chunk,
                  new_segment_id = None, 
                  new_label_value = None,
                  finalized_segment_ids = None,
-                 candidate_segment_ids = None
+                 candidate_segment_ids = None,
                  ):
-        viewer = napari.Viewer()
+
+
+        self.viewer = napari.Viewer()
         contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
-        viewer.add_image(image, contrast_limits=contrast_limits)
-        label_layer = viewer.add_labels(mask, name="Mask")
-        sel_label_layer = viewer.add_labels(
+        self.viewer.add_image(image, contrast_limits=contrast_limits)
+        self.label_layer = self.viewer.add_labels(mask, name="Mask")
+        self.sel_label_layer = self.viewer.add_labels(
             da.zeros_like(mask, dtype=np.uint8), name="Selected Mask"
         )
-        sel_label_layer.contour=3
-        redraw_label_layer = viewer.add_labels(
+        self.sel_label_layer.contour=3
+        self.redraw_label_layer = self.viewer.add_labels(
             np.zeros(mask.shape[-3:], dtype=np.uint8), name="Drawing"
         )
-        finalized_label_layer = viewer.add_labels(
+        self.finalized_label_layer = self.viewer.add_labels(
             da.zeros_like(mask, dtype=np.uint8), name="Finalized",
            # color ={1:"red"}, not working
             opacity=1.0,blending="opaque"
         )
-        finalized_label_layer.contour=3
+        self.finalized_label_layer.contour=3
 
-    
         self.viewer_model = ViewerModel(
+            self,
             new_segment_id=new_segment_id,
             new_label_value=new_label_value,
             finalized_segment_ids=finalized_segment_ids,
@@ -47,7 +55,6 @@ class TravariViewer:
             ignore_invalid_triggers=True, # ignore invalid key presses 
         )
 
-        @label_layer.mouse_drag_callbacks.append
         @log_error
         def track_clicked(layer, event):
             logger.info("Track clicked")
@@ -69,48 +76,22 @@ class TravariViewer:
                     return
                 logger.info(row)
                 segment_id = row["segment_id"].iloc[0]
-
                 self.viewer_model.track_clicked(frame, val ,segment_id)
 
-        @viewer.bind_key("Escape", overwrite=True)
-        def Escape_typed(event):
-            logger.info("Escape typed")
-            self.viewer_model.Escape_typed()
+        self.label_layer.mouse_drag_callbacks.append(track_clicked)
 
-        @viewer.bind_key("Enter", overwrite=True)
-        def Enter_typed(event):
-            logger.info("Enter typed")
-            self.viewer_model.Enter_typed()
-
-        @viewer.bind_key("r", overwrite=True)
-        def r_typed(event):
-            logger.info("r typed")
-            self.viewer_model.r_typed()
-
-        @viewer.bind_key("s", overwrite=True)
-        def s_typed(event):
-            logger.info("s typed")
-            self.viewer_model.s_typed()
-
-        @viewer.bind_key("d", overwrite=True)
-        def d_typed(event):
-            logger.info("d typed")
-            self.viewer_model.d_typed()
-
-        @viewer.bind_key("t", overwrite=True)
-        def t_typed(event):
-            logger.info("t typed")
-            self.viewer_model.t_typed()
+        bind_keys=["Escape","Enter","r","s","d","t",]
+        for k in bind_keys:
+            @log_error
+            def typed(_event):
+                logger.info(f"{k} typed")
+                getattr(self.viewer_model,f"{k}_typed")() # call associated function of the model
+            #register the callback to the viewer
+            self.viewer.bind_key(k,typed,overwrite=True)
 
         @log_error
-        @viewer.bind_key("Control-Alt-Shift-S", overwrite=True)
-        def save_typed(event):
+        def save_typed(_event):
             logger.info("saving validation results...")
-            global viewer_model
-            save_results(zarr_path.replace(".zarr","_travari.zarr"),
-                         label_layer.data,
-                         chunks,
-                         _df_segments,_df_divisions,
-                         self.viewer_model.finalized_segment_ids,
-                         self.viewer_model.candidate_segment_ids)
+            self.viewer_model.save_results(self.zarr_path.replace(".zarr","_travari.zarr"), self.data_chunks)
             logger.info("done.")
+        self.viewer.bind_key("Control-Alt-Shift-S", save_typed, overwrite=True)

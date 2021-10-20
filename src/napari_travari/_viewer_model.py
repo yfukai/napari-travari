@@ -1,11 +1,13 @@
 from enum import Enum
+from os import path
 import numpy as np
 import dask.array as da
+import zarr
 import pandas as pd
 import networkx as nx
 from ._logging import logger,log_error
 from ._consts import *
-from ._gui_utils import ask_draw_label, choose_direction_by_mbox, choose_division_by_mbox, get_annotation_of_track_end
+from ._gui_utils import ask_draw_label, choose_direction_by_mbox, choose_division_by_mbox, get_annotation_of_track_end, ask_ok_or_not
 
 class ViewerState(Enum):
     ALL_LABEL = 1
@@ -18,6 +20,7 @@ class ViewerState(Enum):
 
 class ViewerModel:
     def __init__(self,
+                 travari_viewer,
                  df_segments,
                  df_divisions,
                 *,
@@ -25,11 +28,6 @@ class ViewerModel:
                  new_label_value,
                  finalized_segment_ids,
                  candidate_segment_ids,
-                 viewer,
-                 label_layer,
-                 redraw_label_layer,
-                 sel_label_layer,
-                 finalized_label_layer,
                  ):
         self.selected_label = None
         self.segment_id = None
@@ -39,13 +37,13 @@ class ViewerModel:
         self.label_edited = None
         self.termination_annotation = ""
 
-        self.viewer=viewer
-        self.label_layer=label_layer
-        self.redraw_label_layer=redraw_label_layer
-        self.sel_label_layer=sel_label_layer
-        self.finalized_label_layer=finalized_label_layer
-        self.shape=label_layer.data.shape
-        self.sizeT=label_layer.data.shape[0]
+        self.viewer=travari_viewer.viewer
+        self.label_layer=travari_viewer.label_layer
+        self.redraw_label_layer=travari_viewer.redraw_label_layer
+        self.sel_label_layer=travari_viewer.sel_label_layer
+        self.finalized_label_layer=travari_viewer.finalized_label_layer
+        self.shape=self.label_layer.data.shape
+        self.sizeT=self.label_layer.data.shape[0]
 
         self.df_segments=df_segments
         self.df_divisions=df_divisions
@@ -53,7 +51,7 @@ class ViewerModel:
         self.new_label_value = new_label_value
         self.finalized_segment_ids = finalized_segment_ids
         self.candidate_segment_ids = candidate_segment_ids
-        finalized_label_layer.data=label_layer.data.map_blocks(
+        self.finalized_label_layer.data=self.label_layer.data.map_blocks(
             self.__mask_to_finalized_mask, dtype=np.uint8
         )
 
@@ -66,7 +64,8 @@ class ViewerModel:
             ViewerState.DAUGHTER_DRAW: self.redraw_label_layer,
             ViewerState.DAUGHTER_CHOOSE_MODE: self.sel_label_layer
         }
-        self.layers = [label_layer, sel_label_layer, redraw_label_layer, finalized_label_layer]
+        self.layers = [self.label_layer, self.sel_label_layer, 
+                       self.redraw_label_layer, self.finalized_label_layer]
         self.viewer_state_visibility = {
             ViewerState.ALL_LABEL: [True, False, False, True],
             ViewerState.LABEL_SELECTED: [True, True, False, False],
@@ -483,3 +482,32 @@ class ViewerModel:
             self.__mask_to_finalized_mask, dtype=np.uint8
         )
 
+    @log_error
+    def save_results(self,zarr_path,chunks):
+        logger.info("saving validation results...")
+        if path.exists(zarr_path):
+            if_overwrite = ask_ok_or_not(self.viewer,"Validation file already exists. Overwrite?")
+            if not if_overwrite:
+                return
+        logger.info("saving...")
+        # to avoid IO from/to the same array, save to a temp array and then rename
+        self.label_layer.data.rechunk(chunks).to_zarr(zarr_path,"mask_tmp",overwrite=True)
+        logger.info("saving...")
+        zarr_file=zarr.open(zarr_path,"a")
+        del zarr_file["mask"]
+        zarr_file.store.rename("mask_tmp","mask")
+
+        mask_ds=zarr_file["mask"]
+        logger.info("saving...")
+        #XXX dirty implementation for now as those dataframes are not heavy
+        mask_ds.attrs["df_segments"]=self.df_segments.to_csv()
+        logger.info("saving...")
+        mask_ds.attrs["df_divisions"]=self.df_divisions.to_csv()
+        logger.info("saving...")
+        mask_ds.attrs["finalized_segment_ids"]=list(map(int,self.finalized_segment_ids))
+        mask_ds.attrs["candidate_segment_ids"]=list(map(int,self.candidate_segment_ids))
+
+        logger.info("saving...")
+        self.label_layer.data = da.from_zarr(mask_ds).persist()
+        logger.info("saving validation results...")
+    

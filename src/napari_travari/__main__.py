@@ -16,6 +16,7 @@ from ._viewer import TravariViewer
 @click.command()
 @click.version_option()
 def main() -> None:
+    """Napari Travari."""
     read_travari=True
     base_dir = "/home/fukai/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
     log_path=path.join(path.expanduser("~"),LOGGING_PATH)
@@ -25,7 +26,6 @@ def main() -> None:
     logging.basicConfig(filename=log_path,
                         level=logging.INFO)
 
-    """Napari Travari."""
     zarr_path = path.join(base_dir, "image_total_aligned_small2.zarr")
     #%%
     logger.info("program started")
