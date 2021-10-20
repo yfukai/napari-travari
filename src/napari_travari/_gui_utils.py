@@ -1,7 +1,5 @@
 from qtpy.QtWidgets import QMessageBox, QInputDialog
-from _logging import get_logger
-
-logger = get_logger()
+from ._logging import logger
 
 def __choose_by_mbox(viewer, choices, message):
     msgBox = QMessageBox(viewer.window.qt_viewer)
