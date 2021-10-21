@@ -87,13 +87,16 @@ class TravariViewer:
         self.label_layer.mouse_drag_callbacks.append(track_clicked)
 
         bind_keys=["Escape","Enter","r","s","d","t",]
+        class KeyTyped:
+            def __init__(self1,key:str) -> None:
+                self1.key=key
+            def __call__(self1,_event) -> None:
+                logger.info(f"{self1.key} typed")
+                getattr(self.viewer_model,f"{self1.key}_typed")() # call associated function of the model
+
         for k in bind_keys:
-            @log_error
-            def typed(_event):
-                logger.info(f"{k} typed")
-                getattr(self.viewer_model,f"{k}_typed")() # call associated function of the model
             #register the callback to the viewer
-            self.viewer.bind_key(k,typed,overwrite=True)
+            self.viewer.bind_key(k,KeyTyped(k),overwrite=True)
 
         @log_error
         def save_typed(_event):

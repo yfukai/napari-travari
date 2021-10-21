@@ -1,3 +1,4 @@
+#%%
 """Command-line interface."""
 from os import path
 import os
@@ -13,12 +14,13 @@ from ._consts import LOGGING_PATH
 from ._viewer import TravariViewer
 
 
+#%%
 @click.command()
 @click.version_option()
 def main() -> None:
     """Napari Travari."""
     read_travari=True
-    base_dir = "/home/fukai/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
+    base_dir = "/home/fukai/projects/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
     log_path=path.join(path.expanduser("~"),LOGGING_PATH)
     if not path.exists(path.dirname(log_path)):
         os.makedirs(path.dirname(log_path))
@@ -33,7 +35,7 @@ def main() -> None:
     #%%
     zarr_file = zarr.open(zarr_path, "r")
 
-    image = da.from_zarr(zarr_file["image"]).persist()
+    image = da.from_zarr(zarr_file["image"])#.persist()
     data_chunk = zarr_file["image"].chunks
 
     segment_columns = ["segment_id","bbox_y0","bbox_y1","bbox_x0","bbox_x1"]
@@ -51,7 +53,7 @@ def main() -> None:
         travari_zarr_path=zarr_path.replace(".zarr","_travari.zarr")
         travari_zarr_file = zarr.open(travari_zarr_path, "r")
         mask_ds=travari_zarr_file["mask"]
-        mask = da.from_zarr(mask_ds).persist()
+        mask = da.from_zarr(mask_ds)#.persist()
         df_segments2_buf=io.StringIO(mask_ds.attrs["df_segments"].replace("\\n","\n"))
         df_divisions2_buf=io.StringIO(mask_ds.attrs["df_divisions"].replace("\\n","\n"))
         finalized_segment_ids=set(mask_ds.attrs["finalized_segment_ids"])
@@ -107,3 +109,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main(prog_name="napari-travari")  # pragma: no cover
+# %%
