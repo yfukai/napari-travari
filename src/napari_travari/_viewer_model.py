@@ -182,8 +182,8 @@ class ViewerModel:
         if not iT in self.target_Ts:
             logger.info("this frame is not in target_Ts")
             return False
-        previous_iT=min(0,self.target_Ts.index(iT)-1)
-        next_iT=min(len(self.target_Ts)-1,self.target_Ts.index(iT)+1)
+        previous_iT=self.target_Ts[max(0,self.target_Ts.index(iT)-1)]
+        next_iT=self.target_Ts[min(len(self.target_Ts)-1,self.target_Ts.index(iT)+1)]
         if (    self.segment_labels[         iT] == NOSEL_VALUE 
             and self.segment_labels[previous_iT] == NOSEL_VALUE 
             and self.segment_labels[    next_iT] == NOSEL_VALUE 
@@ -222,8 +222,8 @@ class ViewerModel:
         if not iT in self.target_Ts:
             logger.info("this frame is not in target_Ts")
             return False
-        previous_iT=min(0,self.target_Ts.index(iT)-1)
-        next_iT=min(len(self.target_Ts)-1,self.target_Ts.index(iT)+1)
+        previous_iT=self.target_Ts[max(0,self.target_Ts.index(iT)-1)]
+        next_iT=self.target_Ts[min(len(self.target_Ts)-1,self.target_Ts.index(iT)+1)]
         if (    self.segment_labels[         iT] == NOSEL_VALUE 
             and self.segment_labels[previous_iT] == NOSEL_VALUE 
             and self.segment_labels[    next_iT] == NOSEL_VALUE 
@@ -284,7 +284,7 @@ class ViewerModel:
         if not iT in self.target_Ts:
             logger.info("this frame is not in target_Ts")
             return False
-        previous_iT=min(0,self.target_Ts.index(iT)-1)
+        previous_iT=self.target_Ts[max(0,self.target_Ts.index(iT)-1)]
         if (    self.segment_labels[         iT] == NOSEL_VALUE 
             and self.segment_labels[previous_iT] == NOSEL_VALUE 
         ):
