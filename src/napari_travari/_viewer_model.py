@@ -21,7 +21,6 @@ class ViewerState(Enum):
 class ViewerModel:
     def __init__(self,
                  travari_viewer,
-                 target_Ts,
                  df_segments,
                  df_divisions,
                 *,
@@ -38,7 +37,7 @@ class ViewerModel:
         self.label_edited = None
         self.termination_annotation = ""
 
-        self.target_Ts = list(target_Ts)
+        self.target_Ts = list(travari_viewer.target_Ts)
         self.viewer=travari_viewer.viewer
         self.label_layer=travari_viewer.label_layer
         self.redraw_label_layer=travari_viewer.redraw_label_layer

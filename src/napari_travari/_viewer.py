@@ -16,7 +16,7 @@ class TravariViewer:
                  df_segments,
                  df_divisions,
                  zarr_path,
-                 data_chunk,
+                 data_chunks,
                  new_segment_id, 
                  new_label_value,
                  finalized_segment_ids,
@@ -24,7 +24,8 @@ class TravariViewer:
                  ):
 
         self.zarr_path = zarr_path
-        self.data_chunk = data_chunk
+        self.data_chunks = data_chunks
+        self.target_Ts = sorted(list(map(int,target_Ts)))
 
         self.viewer = napari.Viewer()
         contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
@@ -46,7 +47,6 @@ class TravariViewer:
 
         self.viewer_model = ViewerModel(
             self,
-            target_Ts,
             df_segments,
             df_divisions,
             new_segment_id=new_segment_id,
@@ -100,6 +100,26 @@ class TravariViewer:
         for k in bind_keys:
             #register the callback to the viewer
             self.viewer.bind_key(k,KeyTyped(k),overwrite=True)
+
+        class MoveInTargetTs:
+            def __init__(self1,forward:bool):
+                self1.forward=forward
+            def __call__(self1,_event) -> None:
+                #XXX dirty implementation but works
+                target_Ts=np.array(self.target_Ts)
+                logger.info(f"moving {self1.forward}")
+                iT=self.viewer.dims.point[0]
+                if self1.forward:
+                    iTs = target_Ts[target_Ts>iT]
+                    if len(iTs)>0:
+                        self.viewer.dims.set_point(0,np.min(iTs))
+                else:
+                    iTs = target_Ts[target_Ts<iT]
+                    if len(iTs)>0:
+                        self.viewer.dims.set_point(0,np.max(iTs))
+
+        self.viewer.bind_key("Shift-Right",MoveInTargetTs(True),overwrite=True)
+        self.viewer.bind_key("Shift-Left",MoveInTargetTs(False),overwrite=True)
 
         @log_error
         def save_typed(_event):

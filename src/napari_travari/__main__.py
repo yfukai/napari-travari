@@ -38,7 +38,7 @@ def main() -> None:
     zarr_file = zarr.open(zarr_path, "r")
 
     image = da.from_zarr(zarr_file["image"])#.persist()
-    data_chunk = zarr_file["image"].chunks
+    data_chunks = zarr_file["image"].chunks
 
     segment_columns = ["segment_id","bbox_y0","bbox_y1","bbox_x0","bbox_x1"]
     division_columns=["segment_id_parent","frame_child1","label_child1","frame_child2","label_child2"]
@@ -123,7 +123,7 @@ def main() -> None:
                  df_segments,
                  df_divisions,
                  zarr_path,
-                 data_chunk,
+                 data_chunks,
                  new_segment_id, 
                  new_label_value,
                  finalized_segment_ids,
