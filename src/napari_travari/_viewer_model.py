@@ -21,6 +21,7 @@ class ViewerState(Enum):
 class ViewerModel:
     def __init__(self,
                  travari_viewer,
+                 target_Ts,
                  df_segments,
                  df_divisions,
                 *,
@@ -37,6 +38,7 @@ class ViewerModel:
         self.label_edited = None
         self.termination_annotation = ""
 
+        self.target_Ts = list(target_Ts)
         self.viewer=travari_viewer.viewer
         self.label_layer=travari_viewer.label_layer
         self.redraw_label_layer=travari_viewer.redraw_label_layer
@@ -123,7 +125,10 @@ class ViewerModel:
             return None
         location = block_info[0]["array-location"]
         frame = location[0][0]
-        segments_at_frame = self.df_segments.loc[frame]
+        try:
+            segments_at_frame = self.df_segments.loc[frame]
+        except KeyError:
+            return np.zeros_like(block,dtype=np.uint8)
 
         finalized_labels_at_frame = segments_at_frame[
             segments_at_frame["segment_id"].isin(self.finalized_segment_ids)
@@ -171,13 +176,20 @@ class ViewerModel:
     @log_error
     def label_redraw_enter_valid(self):
         iT = self.viewer.dims.current_step[0]
-        #TODO rewrite to check if 
+        #return True if:
         # - this timeframe is in target_T 
         # - segment_labels is not NOSEL_VALUE in either of this, previous, next target_T
-        if (
-            not np.any(self.sel_label_layer.data[iT] == 1)
-            and not np.any(self.sel_label_layer.data[min(iT + 1, self.sizeT)] == 1)
-            and not np.any(self.sel_label_layer.data[max(iT - 1, 0)] == 1)
+        if not iT in self.target_Ts:
+            logger.info("this frame is not in target_Ts")
+            return False
+        previous_iT=min(0,self.target_Ts.index(iT)-1)
+        next_iT=min(len(self.target_Ts)-1,self.target_Ts.index(iT)+1)
+        if (    self.segment_labels[         iT] == NOSEL_VALUE 
+            and self.segment_labels[previous_iT] == NOSEL_VALUE 
+            and self.segment_labels[    next_iT] == NOSEL_VALUE 
+#            not np.any(self.sel_label_layer.data[iT] == 1)
+#            and not np.any(self.sel_label_layer.data[min(iT + 1, self.sizeT)] == 1)
+#            and not np.any(self.sel_label_layer.data[max(iT - 1, 0)] == 1)
         ):
             logger.info("track does not exist in connected timeframe")
             return False
@@ -207,14 +219,17 @@ class ViewerModel:
     @log_error
     def switch_track_enter_valid(self):
         iT = self.viewer.dims.current_step[0]
-        #TODO rewrite to check if 
-        # - this timeframe is in target_T 
-        # - segment_labels is not NOSEL_VALUE in either of this, previous, next target_T
-        # (make common routine)
-        if (
-            not np.any(self.sel_label_layer.data[iT] == 1)
-            and not np.any(self.sel_label_layer.data[min(iT + 1, self.sizeT)] == 1)
-            and not np.any(self.sel_label_layer.data[max(iT - 1, 0)] == 1)
+        if not iT in self.target_Ts:
+            logger.info("this frame is not in target_Ts")
+            return False
+        previous_iT=min(0,self.target_Ts.index(iT)-1)
+        next_iT=min(len(self.target_Ts)-1,self.target_Ts.index(iT)+1)
+        if (    self.segment_labels[         iT] == NOSEL_VALUE 
+            and self.segment_labels[previous_iT] == NOSEL_VALUE 
+            and self.segment_labels[    next_iT] == NOSEL_VALUE 
+#            not np.any(self.sel_label_layer.data[iT] == 1)
+#            and not np.any(self.sel_label_layer.data[min(iT + 1, self.sizeT)] == 1)
+#            and not np.any(self.sel_label_layer.data[max(iT - 1, 0)] == 1)
         ):
             logger.info("track does not exist in connected timeframe")
             return False
@@ -266,8 +281,12 @@ class ViewerModel:
     def daughter_choose_mode_enter_valid(self):
         logger.info("enter daughter choose")
         iT = self.viewer.dims.current_step[0]
-        if not np.any(self.sel_label_layer.data[iT] == 1) and not np.any(
-            self.sel_label_layer.data[max(iT - 1, 0)] == 1
+        if not iT in self.target_Ts:
+            logger.info("this frame is not in target_Ts")
+            return False
+        previous_iT=min(0,self.target_Ts.index(iT)-1)
+        if (    self.segment_labels[         iT] == NOSEL_VALUE 
+            and self.segment_labels[previous_iT] == NOSEL_VALUE 
         ):
             logger.info("track does not exist in connected timeframe")
             return False

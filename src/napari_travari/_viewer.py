@@ -12,6 +12,7 @@ from ._logging import log_error, logger
 class TravariViewer:
     def __init__(self, 
                  image, mask, 
+                 target_Ts,
                  df_segments,
                  df_divisions,
                  zarr_path,
@@ -45,6 +46,7 @@ class TravariViewer:
 
         self.viewer_model = ViewerModel(
             self,
+            target_Ts,
             df_segments,
             df_divisions,
             new_segment_id=new_segment_id,
@@ -60,6 +62,7 @@ class TravariViewer:
             initial=ViewerState.ALL_LABEL,
             ignore_invalid_triggers=True, # ignore invalid key presses 
         )
+        self.viewer_model.update_layer_status()
 
         @log_error
         def track_clicked(layer, event):

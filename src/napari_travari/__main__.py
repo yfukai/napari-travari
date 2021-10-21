@@ -2,6 +2,7 @@
 """Command-line interface."""
 from os import path
 import os
+import sys
 import io
 import click
 import zarr
@@ -12,6 +13,7 @@ import napari
 import logging
 from ._consts import LOGGING_PATH
 from ._viewer import TravariViewer
+from ._logging import logger
 
 
 #%%
@@ -21,16 +23,16 @@ def main() -> None:
     """Napari Travari."""
     read_travari=True
     base_dir = "/home/fukai/projects/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
+
     log_path=path.join(path.expanduser("~"),LOGGING_PATH)
     if not path.exists(path.dirname(log_path)):
         os.makedirs(path.dirname(log_path))
-    logger=logging.getLogger()
+    _root_logger=logging.getLogger()
     logging.basicConfig(filename=log_path,
                         level=logging.INFO)
+    logger.info("program started")
 
     zarr_path = path.join(base_dir, "image_total_aligned_small2.zarr")
-    #%%
-    logger.info("program started")
 
     #%%
     zarr_file = zarr.open(zarr_path, "r")
@@ -58,7 +60,8 @@ def main() -> None:
         df_divisions2_buf=io.StringIO(mask_ds.attrs["df_divisions"].replace("\\n","\n"))
         finalized_segment_ids=set(mask_ds.attrs["finalized_segment_ids"])
         candidate_segment_ids=set(mask_ds.attrs["candidate_segment_ids"])
-    #    candidate_segment_ids=set()
+        target_Ts=list(np.arange(0,mask.shape[0]-3,6))+list(mask.shape[0]-3+np.arange(3))
+        assert all(np.array(target_Ts)<mask.shape[0])
 
     df_segments2 = pd.read_csv(
         df_segments2_buf,
@@ -76,26 +79,47 @@ def main() -> None:
     )
     df_divisions2=df_divisions2.astype(pd.Int64Dtype())
 
-    #segment_labels = df_segments2.xs(
-    #    0, level="frame", drop_level=False
-    #).index.get_level_values("label")
-    #labels = [0] + sorted(list(set(segment_labels.values)))
-
     new_label_value = df_segments2.index.get_level_values("label").max() + 1
-    assert not np.any(mask ==new_label_value)
+    #assert not np.any(mask ==new_label_value)
     new_segment_id = df_segments2["segment_id"].max() + 1
 
-    #%%
-    # TODO set value of label_layer to zero at timeframes not in target_Ts 
 
-    #%%
-    df_segments=df_segments2.copy()
+    #### only extract information in target_Ts ####
+    logger.info("extracting info")
+
+    mask[np.setdiff1d(np.arange(mask.shape[0]),target_Ts)]=0
+
+    df_segments=df_segments2[df_segments2.index.get_level_values("frame").isin(target_Ts)].copy()
+    def find_alternative_child(frame,label):
+        segment_id = df_segments2.loc[(frame,label)]["segment_id"]
+        df_matched = df_segments[df_segments["segment_id"] == segment_id]
+        if len(df_matched) == 0:
+            return (None, None)
+        else:
+            return df_matched.index.min() # get the first frame of matched points
     df_divisions=df_divisions2.copy()
-    new_segment_id=new_segment_id
+    for i in [1,2]:
+        df_divisions[f"frame_child{i}"], df_divisions[f"label_child{i}"] = \
+                zip(*df_divisions2.apply(lambda row: 
+                        find_alternative_child(
+                                row[f"frame_child{i}"], 
+                                row[f"label_child{i}"]),
+                                axis=1
+                    ))
+        df_divisions[f"frame_child{i}"] = df_divisions[f"frame_child{i}"].astype(pd.Int64Dtype())
+        df_divisions[f"label_child{i}"] = df_divisions[f"label_child{i}"].astype(pd.Int64Dtype())
+    df_divisions=df_divisions.dropna()
 
-    # TODO assert all time steps are in the target_Ts
+    assert all(df_segments.index.get_level_values("frame").isin(target_Ts))
+    for i in [1,2]:
+        assert all(df_divisions[f"frame_child{i}"].isin(target_Ts))
+
+    #### run the viewer ####
+
+    logger.info("running viewer")
     _ = TravariViewer(
                  image, mask, 
+                 target_Ts,
                  df_segments,
                  df_divisions,
                  zarr_path,
