@@ -9,6 +9,7 @@ import zarr
 import numpy as np
 import dask.array as da
 import pandas as pd
+from tqdm import tqdm
 import napari
 import logging
 from ._consts import LOGGING_PATH
@@ -23,6 +24,7 @@ def main() -> None:
     """Napari Travari."""
     read_travari=True
     base_dir = "/home/fukai/projects/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
+    base_dir = "/home/fukai/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
 
     log_path=path.join(path.expanduser("~"),LOGGING_PATH)
     if not path.exists(path.dirname(log_path)):
@@ -60,7 +62,9 @@ def main() -> None:
         df_divisions2_buf=io.StringIO(mask_ds.attrs["df_divisions"].replace("\\n","\n"))
         finalized_segment_ids=set(mask_ds.attrs["finalized_segment_ids"])
         candidate_segment_ids=set(mask_ds.attrs["candidate_segment_ids"])
-        target_Ts=list(np.arange(0,mask.shape[0]-3,6))+list(mask.shape[0]-3+np.arange(3))
+        target_Ts=sorted(mask_ds.attrs["target_Ts"])
+#        green_signal=[np.any(im[1,0,:10,:10]>0).compute() for im in tqdm(image)]
+#        target_Ts=list(np.arange(0,mask.shape[0]-3)[green_signal[:-3]])+list(mask.shape[0]-3+np.arange(3))
         assert all(np.array(target_Ts)<mask.shape[0])
 
     df_segments2 = pd.read_csv(
