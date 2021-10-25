@@ -524,6 +524,7 @@ class ViewerModel:
         logger.info("saving...")
         mask_ds.attrs["finalized_segment_ids"]=list(map(int,self.finalized_segment_ids))
         mask_ds.attrs["candidate_segment_ids"]=list(map(int,self.candidate_segment_ids))
+        mask_ds.attrs["target_Ts"]=list(map(int,self.target_Ts))
 
         logger.info("saving...")
         self.label_layer.data = da.from_zarr(mask_ds).persist()
