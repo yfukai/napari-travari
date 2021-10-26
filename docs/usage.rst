@@ -1,6 +1,6 @@
 Usage
 =====
 
-.. click:: napari_travari.__main__:main
-   :prog: napari-travari
+.. click:: napari_travali.__main__:main
+   :prog: napari-travali
    :nested: full

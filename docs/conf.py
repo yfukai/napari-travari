@@ -2,7 +2,7 @@
 from datetime import datetime
 
 
-project = "Napari Travari"
+project = "Napari Travali"
 author = "Yohsuke T. Fukai"
 copyright = f"{datetime.now().year}, {author}"
 extensions = [

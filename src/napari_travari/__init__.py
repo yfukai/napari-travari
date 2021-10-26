@@ -1,1 +1,1 @@
-"""Napari Travari."""
+"""Napari Travali."""

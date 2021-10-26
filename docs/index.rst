@@ -13,4 +13,4 @@
    contributing
    Code of Conduct <codeofconduct>
    License <license>
-   Changelog <https://github.com/yfukai/napari-travari/releases>
+   Changelog <https://github.com/yfukai/napari-travali/releases>
