@@ -24,7 +24,7 @@ def main() -> None:
     """Napari Travari."""
     read_travari=True
     base_dir = "/home/fukai/projects/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
-    base_dir = "/home/fukai/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
+#    base_dir = "/home/fukai/microscope_analysis/old/LSM800_2021-03-04-timelapse_old"
 
     log_path=path.join(path.expanduser("~"),LOGGING_PATH)
     if not path.exists(path.dirname(log_path)):
