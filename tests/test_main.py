@@ -2,7 +2,7 @@
 import pytest
 from click.testing import CliRunner
 
-from napari_travari import __main__
+from napari_travali import __main__
 
 
 @pytest.fixture

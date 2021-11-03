@@ -1,4 +1,4 @@
-Napari Travari
+Napari Travali
 ==============
 
 |PyPI| |Status| |Python Version| |License|
@@ -7,26 +7,26 @@ Napari Travari
 
 |pre-commit| |Black|
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/napari-travari.svg
-   :target: https://pypi.org/project/napari-travari/
+.. |PyPI| image:: https://img.shields.io/pypi/v/napari-travali.svg
+   :target: https://pypi.org/project/napari-travali/
    :alt: PyPI
-.. |Status| image:: https://img.shields.io/pypi/status/napari-travari.svg
-   :target: https://pypi.org/project/napari-travari/
+.. |Status| image:: https://img.shields.io/pypi/status/napari-travali.svg
+   :target: https://pypi.org/project/napari-travali/
    :alt: Status
-.. |Python Version| image:: https://img.shields.io/pypi/pyversions/napari-travari
-   :target: https://pypi.org/project/napari-travari
+.. |Python Version| image:: https://img.shields.io/pypi/pyversions/napari-travali
+   :target: https://pypi.org/project/napari-travali
    :alt: Python Version
-.. |License| image:: https://img.shields.io/pypi/l/napari-travari
+.. |License| image:: https://img.shields.io/pypi/l/napari-travali
    :target: https://opensource.org/licenses/MIT
    :alt: License
-.. |Read the Docs| image:: https://img.shields.io/readthedocs/napari-travari/latest.svg?label=Read%20the%20Docs
-   :target: https://napari-travari.readthedocs.io/
-   :alt: Read the documentation at https://napari-travari.readthedocs.io/
-.. |Tests| image:: https://github.com/yfukai/napari-travari/workflows/Tests/badge.svg
-   :target: https://github.com/yfukai/napari-travari/actions?workflow=Tests
+.. |Read the Docs| image:: https://img.shields.io/readthedocs/napari-travali/latest.svg?label=Read%20the%20Docs
+   :target: https://napari-travali.readthedocs.io/
+   :alt: Read the documentation at https://napari-travali.readthedocs.io/
+.. |Tests| image:: https://github.com/yfukai/napari-travali/workflows/Tests/badge.svg
+   :target: https://github.com/yfukai/napari-travali/actions?workflow=Tests
    :alt: Tests
-.. |Codecov| image:: https://codecov.io/gh/yfukai/napari-travari/branch/main/graph/badge.svg
-   :target: https://codecov.io/gh/yfukai/napari-travari
+.. |Codecov| image:: https://codecov.io/gh/yfukai/napari-travali/branch/main/graph/badge.svg
+   :target: https://codecov.io/gh/yfukai/napari-travali
    :alt: Codecov
 .. |pre-commit| image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
    :target: https://github.com/pre-commit/pre-commit
@@ -51,11 +51,11 @@ Requirements
 Installation
 ------------
 
-You can install *Napari Travari* via pip_ from PyPI_:
+You can install *Napari Travali* via pip_ from PyPI_:
 
 .. code:: console
 
-   $ pip install napari-travari
+   $ pip install napari-travali
 
 
 Usage
@@ -75,7 +75,7 @@ License
 -------
 
 Distributed under the terms of the `MIT license`_,
-*Napari Travari* is free and open source software.
+*Napari Travali* is free and open source software.
 
 
 Issues
@@ -95,8 +95,8 @@ This project was generated from `@cjolowicz`_'s `Hypermodern Python Cookiecutter
 .. _MIT license: https://opensource.org/licenses/MIT
 .. _PyPI: https://pypi.org/
 .. _Hypermodern Python Cookiecutter: https://github.com/cjolowicz/cookiecutter-hypermodern-python
-.. _file an issue: https://github.com/yfukai/napari-travari/issues
+.. _file an issue: https://github.com/yfukai/napari-travali/issues
 .. _pip: https://pip.pypa.io/
 .. github-only
 .. _Contributor Guide: CONTRIBUTING.rst
-.. _Usage: https://napari-travari.readthedocs.io/en/latest/usage.html
+.. _Usage: https://napari-travali.readthedocs.io/en/latest/usage.html

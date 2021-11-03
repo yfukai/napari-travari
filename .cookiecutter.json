@@ -3,10 +3,10 @@
   "author": "Yohsuke T. Fukai",
   "development_status": "Development Status :: 2 - Pre-Alpha",
   "email": "ysk@yfukai.net",
-  "friendly_name": "Napari Travari",
+  "friendly_name": "Napari Travali",
   "github_user": "yfukai",
   "license": "MIT",
-  "package_name": "napari_travari",
-  "project_name": "napari-travari",
+  "package_name": "napari_travali",
+  "project_name": "napari-travali",
   "version": "0.0.0"
 }

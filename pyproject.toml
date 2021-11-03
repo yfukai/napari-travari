@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "napari-travari"
+name = "napari-travali"
 version = "0.0.0"
-description = "Napari Travari"
+description = "Napari Travali"
 authors = ["Yohsuke T. Fukai <ysk@yfukai.net>"]
 license = "MIT"
 readme = "README.rst"
-homepage = "https://github.com/yfukai/napari-travari"
-repository = "https://github.com/yfukai/napari-travari"
-documentation = "https://napari-travari.readthedocs.io"
+homepage = "https://github.com/yfukai/napari-travali"
+repository = "https://github.com/yfukai/napari-travali"
+documentation = "https://napari-travali.readthedocs.io"
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Programming Language :: Python :: 3.6",
@@ -17,7 +17,7 @@ classifiers = [
 ]
 
 [tool.poetry.urls]
-Changelog = "https://github.com/yfukai/napari-travari/releases"
+Changelog = "https://github.com/yfukai/napari-travali/releases"
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
@@ -48,14 +48,14 @@ sphinx-click = "^3.0.1"
 Pygments = "^2.9.0"
 
 [tool.poetry.scripts]
-napari-travari = "napari_travari.__main__:main"
+napari-travali = "napari_travali.__main__:main"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
 
 [tool.coverage.run]
 branch = true
-source = ["napari_travari"]
+source = ["napari_travali"]
 
 [tool.coverage.report]
 show_missing = true

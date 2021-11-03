@@ -1,5 +1,6 @@
 from enum import Enum
 from os import path
+from typing import List
 import numpy as np
 import dask.array as da
 import zarr
@@ -8,6 +9,7 @@ import networkx as nx
 from ._logging import logger,log_error
 from ._consts import *
 from ._gui_utils import ask_draw_label, choose_direction_by_mbox, choose_division_by_mbox, get_annotation_of_track_end, ask_ok_or_not
+from ._viewer import TravaliViewer
 
 class ViewerState(Enum):
     ALL_LABEL = 1
@@ -19,16 +21,37 @@ class ViewerState(Enum):
     DAUGHTER_CHOOSE_MODE = 7
 
 class ViewerModel:
+    """The model responsible for updating the viewer state
+    """
     def __init__(self,
-                 travari_viewer,
-                 df_segments,
-                 df_divisions,
+                 travali_viewer: TravaliViewer,
+                 df_segments: pd.DataFrame,
+                 df_divisions: pd.DataFrame,
                 *,
-                 new_segment_id,
-                 new_label_value,
-                 finalized_segment_ids,
-                 candidate_segment_ids,
+                 new_segment_id: int,
+                 new_label_value: int,
+                 finalized_segment_ids: List[int],
+                 candidate_segment_ids: List[int],
                  ):
+        """Initialize the model
+
+        Parameters
+        ----------
+        travali_viewer : TravaliViewer
+            the base TravaliViewer object
+        df_segments : pd.DataFrame
+            a dataframe containing the segment information
+        df_divisions : pd.DataFrame
+            a dataframe containing the division information
+        new_segment_id : int
+            the id of the new segment
+        new_label_value : int
+            the value of the new label
+        finalized_segment_ids : List[int]
+            the list of segment ids that have been finalized
+        candidate_segment_ids : List[int]
+            the list of segment ids that are candidates for annotation
+        """
         self.selected_label = None
         self.segment_id = None
         self.frame_childs = None
@@ -37,12 +60,12 @@ class ViewerModel:
         self.label_edited = None
         self.termination_annotation = ""
 
-        self.target_Ts = list(travari_viewer.target_Ts)
-        self.viewer=travari_viewer.viewer
-        self.label_layer=travari_viewer.label_layer
-        self.redraw_label_layer=travari_viewer.redraw_label_layer
-        self.sel_label_layer=travari_viewer.sel_label_layer
-        self.finalized_label_layer=travari_viewer.finalized_label_layer
+        self.target_Ts = list(travali_viewer.target_Ts)
+        self.viewer=travali_viewer.viewer
+        self.label_layer=travali_viewer.label_layer
+        self.redraw_label_layer=travali_viewer.redraw_label_layer
+        self.sel_label_layer=travali_viewer.sel_label_layer
+        self.finalized_label_layer=travali_viewer.finalized_label_layer
         self.shape=self.label_layer.data.shape
         self.sizeT=self.label_layer.data.shape[0]
 
@@ -79,6 +102,8 @@ class ViewerModel:
 
     @log_error
     def update_layer_status(self,*_):
+        """Update the layer status according to the current viewer state.
+        """
         visibles=self.viewer_state_visibility[self.state]
         assert len(visibles) == len(self.layers)
         for i in range(len(self.layers)):
@@ -92,6 +117,8 @@ class ViewerModel:
 
     @log_error
     def refresh_redraw_label_layer(self):
+        """Refresh the redraw_label_layer to blank.
+        """
         self.redraw_label_layer.data = np.zeros_like(self.redraw_label_layer.data)
         self.redraw_label_layer.mode = "paint"
 

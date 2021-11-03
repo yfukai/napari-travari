@@ -1,1 +1,0 @@
-"""Napari Travari."""

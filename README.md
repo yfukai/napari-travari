@@ -1,5 +1,5 @@
-# napari-travari
-napari TRAck VARIdator : helps manual cell track varidation on napari
+# napari-travali
+napari TRAck VALIdator : helps manual cell track varidation on napari
 
 # Installation
 

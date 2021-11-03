@@ -6,8 +6,8 @@ Reference
     :backlinks: none
 
 
-napari_travari.__main__
+napari_travali.__main__
 -----------------------
 
-.. automodule:: napari_travari.__main__
+.. automodule:: napari_travali.__main__
    :members:

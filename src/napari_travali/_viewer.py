@@ -9,7 +9,7 @@ from ._logging import log_error, logger
 
 
 # XXX tenative implementation : pluginfy later.
-class TravariViewer:
+class TravaliViewer:
     def __init__(self, 
                  image, mask, 
                  target_Ts,
@@ -124,6 +124,6 @@ class TravariViewer:
         @log_error
         def save_typed(_event):
             logger.info("saving validation results...")
-            self.viewer_model.save_results(self.zarr_path.replace(".zarr","_travari.zarr"), self.data_chunks)
+            self.viewer_model.save_results(self.zarr_path.replace(".zarr","_travali.zarr"), self.data_chunks)
             logger.info("done.")
         self.viewer.bind_key("Control-Alt-Shift-S", save_typed, overwrite=True)
