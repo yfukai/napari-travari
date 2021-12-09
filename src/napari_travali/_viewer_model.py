@@ -9,7 +9,7 @@ import networkx as nx
 from ._logging import logger,log_error
 from ._consts import *
 from ._gui_utils import ask_draw_label, choose_direction_by_mbox, choose_division_by_mbox, get_annotation_of_track_end, ask_ok_or_not
-from ._viewer import TravaliViewer
+#from ._viewer import TravaliViewer
 
 class ViewerState(Enum):
     ALL_LABEL = 1
@@ -24,7 +24,7 @@ class ViewerModel:
     """The model responsible for updating the viewer state
     """
     def __init__(self,
-                 travali_viewer: TravaliViewer,
+                 travali_viewer,
                  df_segments: pd.DataFrame,
                  df_divisions: pd.DataFrame,
                 *,
@@ -534,26 +534,25 @@ class ViewerModel:
             if_overwrite = ask_ok_or_not(self.viewer,"Validation file already exists. Overwrite?")
             if not if_overwrite:
                 return
-        logger.info("saving...")
+        logger.info("saving mask ...")
         # to avoid IO from/to the same array, save to a temp array and then rename
         self.label_layer.data.rechunk(chunks).to_zarr(zarr_path,"mask_tmp",overwrite=True)
-        logger.info("saving...")
         zarr_file=zarr.open(zarr_path,"a")
         del zarr_file["mask"]
         zarr_file.store.rename("mask_tmp","mask")
 
-        mask_ds=zarr_file["mask"]
-        logger.info("saving...")
-        #XXX dirty implementation for now as those dataframes are not heavy
-        mask_ds.attrs["df_segments"]=self.df_segments.to_csv()
-        logger.info("saving...")
-        mask_ds.attrs["df_divisions"]=self.df_divisions.to_csv()
-        logger.info("saving...")
+        logger.info("saving segments...")
+        _df_segments
+        zarr_file["df_segments"]=self.df_segments.reset_index().astype(int).values
+        logger.info("saving divisions...")
+        zarr_file["df_divisions"]=self.df_divisions.reset_index().astype(int).values
+        mask_ds.attrs["df_divisions"]=self.df_divisions.reset_index().to_dict()
+        logger.info("saving others...")
         mask_ds.attrs["finalized_segment_ids"]=list(map(int,self.finalized_segment_ids))
         mask_ds.attrs["candidate_segment_ids"]=list(map(int,self.candidate_segment_ids))
         mask_ds.attrs["target_Ts"]=list(map(int,self.target_Ts))
 
-        logger.info("saving...")
+        logger.info("reading data ...")
         self.label_layer.data = da.from_zarr(mask_ds).persist()
-        logger.info("saving validation results...")
+        logger.info("saving validation results finished")
     

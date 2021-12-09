@@ -2,7 +2,6 @@ import napari
 import numpy as np
 from dask import array as da
 from transitions import Machine
-import zarr
 from ._viewer_model import ViewerModel, ViewerState
 from ._transitions import transitions
 from ._logging import log_error, logger
