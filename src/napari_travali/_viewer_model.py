@@ -123,7 +123,8 @@ class ViewerModel:
         self.redraw_label_layer.mode = "paint"
 
     @log_error
-    def __mask_to_selected_label_image(self, block, block_info=None):
+    def __mask_to_selected_mask_image(self, block, block_info=None):
+        """Convert a block of mask image to the selected mask image."""
         #        print("block_info",block_info[0]['array-location'])
         assert not self.segment_labels is None
         assert not self.frame_childs is None
@@ -146,6 +147,7 @@ class ViewerModel:
 
     @log_error
     def __mask_to_finalized_mask(self, block, block_info=None):
+        """Convert a block of mask image to the finalize mask image."""
         #        print("block_info",block_info[0]['array-location'])
         if block_info is None or len(block_info) == 0:
             return None
@@ -196,7 +198,7 @@ class ViewerModel:
             return
         print(self.frame_childs, self.label_childs)
         self.sel_label_layer.data = self.label_layer.data.map_blocks(
-            self.__mask_to_selected_label_image, dtype=np.uint8
+            self.__mask_to_selected_mask_image, dtype=np.uint8
         )
 
     @log_error
