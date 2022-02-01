@@ -12,7 +12,7 @@ def log_error(func):
     def wrapped(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except BaseException as error:
+        except BaseException:
             logger.error(traceback.format_exc())
 
     return wrapped

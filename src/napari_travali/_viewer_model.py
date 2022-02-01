@@ -29,6 +29,17 @@ class ViewerState(Enum):
     DAUGHTER_CHOOSE_MODE = 7
 
 
+VIEWER_STATE_VISIBILITY = {
+    ViewerState.ALL_LABEL: [True, False, False, True],
+    ViewerState.LABEL_SELECTED: [True, True, False, False],
+    ViewerState.LABEL_REDRAW: [False, False, True, False],
+    ViewerState.LABEL_SWITCH: [True, False, False, True],
+    ViewerState.DAUGHTER_SWITCH: [True, False, False, True],
+    ViewerState.DAUGHTER_DRAW: [False, False, True, False],
+    ViewerState.DAUGHTER_CHOOSE_MODE: [False, True, False, False],
+}
+
+
 class ViewerModel:
     """The model responsible for updating the viewer state"""
 
@@ -104,20 +115,11 @@ class ViewerModel:
             self.redraw_label_layer,
             self.finalized_label_layer,
         ]
-        self.viewer_state_visibility = {
-            ViewerState.ALL_LABEL: [True, False, False, True],
-            ViewerState.LABEL_SELECTED: [True, True, False, False],
-            ViewerState.LABEL_REDRAW: [False, False, True, False],
-            ViewerState.LABEL_SWITCH: [True, False, False, True],
-            ViewerState.DAUGHTER_SWITCH: [True, False, False, True],
-            ViewerState.DAUGHTER_DRAW: [False, False, True, False],
-            ViewerState.DAUGHTER_CHOOSE_MODE: [False, True, False, False],
-        }
 
     @log_error
     def update_layer_status(self, *_):
         """Update the layer status according to the current viewer state."""
-        visibles = self.viewer_state_visibility[self.state]
+        visibles = VIEWER_STATE_VISIBILITY[self.state]
         assert len(visibles) == len(self.layers)
         for i in range(len(self.layers)):
             try:
