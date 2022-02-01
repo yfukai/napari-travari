@@ -1,5 +1,8 @@
-from qtpy.QtWidgets import QMessageBox, QInputDialog
+from qtpy.QtWidgets import QInputDialog
+from qtpy.QtWidgets import QMessageBox
+
 from ._logging import logger
+
 
 def __choose_by_mbox(viewer, choices, message):
     msgBox = QMessageBox(viewer.window.qt_viewer)
@@ -21,12 +24,14 @@ def __choose_by_mbox(viewer, choices, message):
     except ValueError:
         return None
 
+
 def choose_direction_by_mbox(viewer):
     return __choose_by_mbox(
         viewer,
         ["forward", "backward"],
         "Select the time direction of the new track",
     )
+
 
 def choose_division_by_mbox(viewer):
     return __choose_by_mbox(
@@ -35,20 +40,15 @@ def choose_division_by_mbox(viewer):
         "Select or draw the daughter?",
     )
 
+
 def ask_draw_label(viewer):
-    return __choose_by_mbox(
-        viewer,
-        ["modify", "new"],
-        "Modify label, or create new?"
-    )
-    
-def ask_ok_or_not(viewer,message):
-    dialogue_result = __choose_by_mbox(
-        viewer,
-        ["Ok"],
-        message
-    )
-    return dialogue_result=="Ok"
+    return __choose_by_mbox(viewer, ["modify", "new"], "Modify label, or create new?")
+
+
+def ask_ok_or_not(viewer, message):
+    dialogue_result = __choose_by_mbox(viewer, ["Ok"], message)
+    return dialogue_result == "Ok"
+
 
 def get_annotation_of_track_end(viewer):
     return QInputDialog.getText(

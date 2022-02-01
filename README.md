@@ -16,18 +16,18 @@ Napari TRAck VALIdator
 
 ## Features
 
--   TODO
+- TODO
 
 ## Requirements
 
--   TODO
+- TODO
 
 ## Installation
 
-You can install *Napari Travali* via [pip](https://pip.pypa.io/) from
+You can install _Napari Travali_ via [pip](https://pip.pypa.io/) from
 [PyPI](https://pypi.org/):
 
-``` console
+```console
 $ pip install napari-travali
 ```
 
@@ -45,7 +45,7 @@ Guide](CONTRIBUTING.rst).
 ## License
 
 Distributed under the terms of the [MIT
-license](https://opensource.org/licenses/MIT), *Napari Travali* is free
+license](https://opensource.org/licenses/MIT), _Napari Travali_ is free
 and open source software.
 
 ## Issues

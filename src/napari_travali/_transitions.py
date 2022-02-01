@@ -16,15 +16,14 @@ transitions = [
         "trigger": "Enter_typed",
         "source": ViewerState.LABEL_SELECTED,
         "dest": ViewerState.ALL_LABEL,
-        "before": "finalize_track"
+        "before": "finalize_track",
     },
-
     {
         "trigger": "r_typed",
         "source": ViewerState.LABEL_SELECTED,
         "dest": ViewerState.LABEL_REDRAW,
         "conditions": "label_redraw_enter_valid",
-        "before": "refresh_redraw_label_layer"
+        "before": "refresh_redraw_label_layer",
     },
     {
         "trigger": "Enter_typed",
@@ -38,7 +37,6 @@ transitions = [
         "source": ViewerState.LABEL_REDRAW,
         "dest": ViewerState.LABEL_SELECTED,
     },
-
     {
         "trigger": "s_typed",
         "source": ViewerState.LABEL_SELECTED,
@@ -56,7 +54,6 @@ transitions = [
         "dest": ViewerState.LABEL_SELECTED,
         "before": "switch_track",
     },
-
     {
         "trigger": "d_typed",
         "source": ViewerState.LABEL_SELECTED,
@@ -74,7 +71,7 @@ transitions = [
         "source": ViewerState.DAUGHTER_DRAW,
         "dest": ViewerState.DAUGHTER_CHOOSE_MODE,
         "conditions": "check_drawn_label",
-        "before": "daughter_draw_finish"
+        "before": "daughter_draw_finish",
     },
     {
         "trigger": "Escape_typed",
@@ -86,8 +83,6 @@ transitions = [
         "source": ViewerState.DAUGHTER_DRAW,
         "dest": ViewerState.LABEL_SELECTED,
     },
-
- 
     {
         "trigger": "t_typed",
         "source": ViewerState.LABEL_SELECTED,
@@ -95,4 +90,4 @@ transitions = [
         "conditions": "mark_termination_enter_valid",
         "before": "mark_termination",
     },
- ]
+]
