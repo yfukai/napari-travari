@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 import zarr
 
-from ._consts import *
+from ._consts import NEW_LABEL_VALUE
+from ._consts import NOSEL_VALUE
 from ._gui_utils import ask_draw_label
 from ._gui_utils import ask_ok_or_not
 from ._gui_utils import choose_direction_by_mbox
@@ -411,12 +412,9 @@ class ViewerModel:
     def finalize_track(self):
         segment_id = self.segment_id
         segment_labels = self.segment_labels
-        label_edited = self.label_edited
 
         frame_childs = self.frame_childs.copy()
         label_childs = self.label_childs.copy()
-
-        termination_annotation = self.termination_annotation
 
         segment_graph = nx.Graph()
         frame_labels = list(enumerate(segment_labels)) + list(
@@ -599,20 +597,19 @@ class ViewerModel:
         zarr_file.store.rename("mask_tmp", "mask")
 
         logger.info("saving segments...")
-        _df_segments
         zarr_file["df_segments"] = self.df_segments.reset_index().astype(int).values
         logger.info("saving divisions...")
         zarr_file["df_divisions"] = self.df_divisions.reset_index().astype(int).values
-        mask_ds.attrs["df_divisions"] = self.df_divisions.reset_index().to_dict()
+        zarr_file.attrs["df_divisions"] = self.df_divisions.reset_index().to_dict()
         logger.info("saving others...")
-        mask_ds.attrs["finalized_segment_ids"] = list(
+        zarr_file.attrs["finalized_segment_ids"] = list(
             map(int, self.finalized_segment_ids)
         )
-        mask_ds.attrs["candidate_segment_ids"] = list(
+        zarr_file.attrs["candidate_segment_ids"] = list(
             map(int, self.candidate_segment_ids)
         )
-        mask_ds.attrs["target_Ts"] = list(map(int, self.target_Ts))
+        zarr_file.attrs["target_Ts"] = list(map(int, self.target_Ts))
 
         logger.info("reading data ...")
-        self.label_layer.data = da.from_zarr(mask_ds).persist()
+        self.label_layer.data = da.from_zarr(zarr_file["mask"]).persist()
         logger.info("saving validation results finished")
