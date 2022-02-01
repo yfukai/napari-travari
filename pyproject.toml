@@ -30,6 +30,9 @@ QtPy = "^2.0.0"
 transitions = "^0.8.10"
 networkx = "^2.6.3"
 
+[tool.poetry.extras]
+pyqt5 = ["pyqt5"]
+
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
 coverage = {extras = ["toml"], version = "^6.1"}

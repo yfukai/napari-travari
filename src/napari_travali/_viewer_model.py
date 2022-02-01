@@ -18,8 +18,6 @@ from ._gui_utils import get_annotation_of_track_end
 from ._logging import log_error
 from ._logging import logger
 
-# from ._viewer import TravaliViewer
-
 
 class ViewerState(Enum):
     ALL_LABEL = 1
@@ -600,7 +598,6 @@ class ViewerModel:
         zarr_file["df_segments"] = self.df_segments.reset_index().astype(int).values
         logger.info("saving divisions...")
         zarr_file["df_divisions"] = self.df_divisions.reset_index().astype(int).values
-        zarr_file.attrs["df_divisions"] = self.df_divisions.reset_index().to_dict()
         logger.info("saving others...")
         zarr_file.attrs["finalized_segment_ids"] = list(
             map(int, self.finalized_segment_ids)
