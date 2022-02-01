@@ -13,12 +13,12 @@ repos:
     rev: 21.12b0
     hooks:
       - id: black
-  #  - repo: https://github.com/PyCQA/flake8
-  #    rev: 4.0.1
-  #    hooks:
-  #      - id: flake8
-  #        types: [python]
-  #        require_serial: true
+  - repo: https://github.com/PyCQA/flake8
+    rev: 4.0.1
+    hooks:
+      - id: flake8
+        types: [python]
+        require_serial: true
   - repo: https://github.com/asottile/reorder_python_imports
     rev: v2.7.1
     hooks:
