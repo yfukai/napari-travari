@@ -15,7 +15,7 @@ class TravaliViewer:
     def __init__(
         self,
         image,
-        mask,
+        label,
         target_Ts,
         df_segments,
         df_divisions,
@@ -34,16 +34,16 @@ class TravaliViewer:
         self.viewer = napari.Viewer()
         contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
         self.viewer.add_image(image, contrast_limits=contrast_limits)
-        self.label_layer = self.viewer.add_labels(mask, name="Mask")
+        self.label_layer = self.viewer.add_labels(label, name="label")
         self.sel_label_layer = self.viewer.add_labels(
-            da.zeros_like(mask, dtype=np.uint8), name="Selected Mask"
+            da.zeros_like(label, dtype=np.uint8), name="Selected label"
         )
         self.sel_label_layer.contour = 3
         self.redraw_label_layer = self.viewer.add_labels(
-            np.zeros(mask.shape[-3:], dtype=np.uint8), name="Drawing"
+            np.zeros(label.shape[-3:], dtype=np.uint8), name="Drawing"
         )
         self.finalized_label_layer = self.viewer.add_labels(
-            da.zeros_like(mask, dtype=np.uint8),
+            da.zeros_like(label, dtype=np.uint8),
             name="Finalized",
             # color ={1:"red"}, not working
             opacity=1.0,

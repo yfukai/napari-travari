@@ -1,8 +1,11 @@
 # Napari Travali
 
+<!--
 [![PyPI](https://img.shields.io/pypi/v/napari-travali.svg)](https://pypi.org/project/napari-travali/)
 [![Status](https://img.shields.io/pypi/status/napari-travali.svg)](https://pypi.org/project/napari-travali/)
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-travali)](https://pypi.org/project/napari-travali)
+-->
+
 [![License](https://img.shields.io/pypi/l/napari-travali)](https://opensource.org/licenses/MIT)
 
 [![Read the documentation at https://napari-travali.readthedocs.io/](https://img.shields.io/readthedocs/napari-travali/latest.svg?label=Read%20the%20Docs)](https://napari-travali.readthedocs.io/)
@@ -16,22 +19,30 @@ Napari TRAck VALIdator
 
 ## Features
 
-- TODO
-
-## Requirements
-
-- TODO
+- Enables manual validation of cell tracking results.
 
 ## Installation
 
-You can install _Napari Travali_ via [pip](https://pip.pypa.io/) from
-[PyPI](https://pypi.org/):
+Currently at this early stage, you can install Napari Travali only fron GitHub
+You can install _Napari Travali_ via G
 
 ```console
-$ pip install napari-travali
+$ pip install git+https://github.com/yfukai/napari-travali
 ```
 
 ## Usage
+
+### Input data specification
+
+Currently we accept segmented / tracked data in the following format.
+
+- file format : `zarr`
+- contents :
+  - `Dataset` named `label`
+  - `Dataset` named `label`
+  - `Dataset` named `label`
+  - `Dataset` named `label`
+  - `Dataset` named `label`
 
 Please see the [Command-line
 Reference](https://napari-travali.readthedocs.io/en/latest/usage.html)

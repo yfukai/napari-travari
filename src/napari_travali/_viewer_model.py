@@ -88,7 +88,7 @@ class ViewerModel:
         self.finalized_segment_ids = finalized_segment_ids
         self.candidate_segment_ids = candidate_segment_ids
         self.finalized_label_layer.data = self.label_layer.data.map_blocks(
-            self.__mask_to_finalized_mask, dtype=np.uint8
+            self.__label_to_finalized_label, dtype=np.uint8
         )
 
         self.viewer_state_active = {
@@ -137,8 +137,8 @@ class ViewerModel:
         self.redraw_label_layer.mode = "paint"
 
     @log_error
-    def __mask_to_selected_mask_image(self, block, block_info=None):
-        """Convert a block of mask image to the selected mask image."""
+    def __label_to_selected_label_image(self, block, block_info=None):
+        """Convert a block of label image to the selected label image."""
         #        print("block_info",block_info[0]['array-location'])
         assert not self.segment_labels is None
         assert not self.frame_childs is None
@@ -147,21 +147,21 @@ class ViewerModel:
             return None
         location = block_info[0]["array-location"]
         iT = location[0][0]
-        sel_mask = (block == self.segment_labels[iT]).astype(np.uint8)
+        sel_label = (block == self.segment_labels[iT]).astype(np.uint8)
         # reading from df_segments2
         for j, (frame, label) in enumerate(zip(self.frame_childs, self.label_childs)):
             if iT == frame:
                 if np.isscalar(label):
-                    sel_mask[block == label] = j + 2
+                    sel_label[block == label] = j + 2
                 else:
                     indices = [slice(loc[0], loc[1]) for loc in location]
                     sub_label = label[tuple(indices)[2:]]
-                    sel_mask[0, 0][sub_label] = j + 2
-        return sel_mask
+                    sel_label[0, 0][sub_label] = j + 2
+        return sel_label
 
     @log_error
-    def __mask_to_finalized_mask(self, block, block_info=None):
-        """Convert a block of mask image to the finalize mask image."""
+    def __label_to_finalized_label(self, block, block_info=None):
+        """Convert a block of label image to the finalize label image."""
         #        print("block_info",block_info[0]['array-location'])
         if block_info is None or len(block_info) == 0:
             return None
@@ -180,13 +180,13 @@ class ViewerModel:
             segments_at_frame["segment_id"].isin(self.candidate_segment_ids)
         ].index.get_level_values("label")
 
-        mask_finalized = (np.isin(block, np.array(finalized_labels_at_frame))).astype(
+        label_finalized = (np.isin(block, np.array(finalized_labels_at_frame))).astype(
             np.uint8
         )
-        mask_candidate = (np.isin(block, np.array(candidate_labels_at_frame))).astype(
+        label_candidate = (np.isin(block, np.array(candidate_labels_at_frame))).astype(
             np.uint8
         )
-        return mask_finalized + 2 * mask_candidate
+        return label_finalized + 2 * label_candidate
 
     @log_error
     def select_track(self, frame, val, segment_id):
@@ -215,7 +215,7 @@ class ViewerModel:
             return
         print(self.frame_childs, self.label_childs)
         self.sel_label_layer.data = self.label_layer.data.map_blocks(
-            self.__mask_to_selected_mask_image, dtype=np.uint8
+            self.__label_to_selected_label_image, dtype=np.uint8
         )
 
     @log_error
@@ -483,12 +483,12 @@ class ViewerModel:
                     ] = self.new_segment_id
             self.new_segment_id += 1
 
-        def __draw_label(mask_image, frame, label):
+        def __draw_label(label_image, frame, label):
             # XXX tenative imprementation, faster if directly edit the zarr?
             __dask_compute = (
                 lambda arr: arr.compute() if isinstance(arr, da.Array) else arr
             )
-            inds = [__dask_compute(i) for i in np.where(mask_image)]
+            inds = [__dask_compute(i) for i in np.where(label_image)]
             bboxes = [(np.min(ind), np.max(ind) + 1) for ind in inds]
             subimg = np.array(
                 self.label_layer.data[frame, 0, 0, slice(*bboxes[0]), slice(*bboxes[1])]
@@ -575,7 +575,7 @@ class ViewerModel:
         self.candidate_segment_ids.discard(segment_id)
 
         self.finalized_label_layer.data = self.label_layer.data.map_blocks(
-            self.__mask_to_finalized_mask, dtype=np.uint8
+            self.__label_to_finalized_label, dtype=np.uint8
         )
 
     @log_error
@@ -587,14 +587,14 @@ class ViewerModel:
             )
             if not if_overwrite:
                 return
-        logger.info("saving mask ...")
+        logger.info("saving label ...")
         # to avoid IO from/to the same array, save to a temp array and then rename
         self.label_layer.data.rechunk(chunks).to_zarr(
-            zarr_path, "mask_tmp", overwrite=True
+            zarr_path, "label_tmp", overwrite=True
         )
         zarr_file = zarr.open(zarr_path, "a")
-        del zarr_file["mask"]
-        zarr_file.store.rename("mask_tmp", "mask")
+        del zarr_file["label"]
+        zarr_file.store.rename("label_tmp", "label")
 
         logger.info("saving segments...")
         zarr_file["df_segments"] = self.df_segments.reset_index().astype(int).values
@@ -611,5 +611,5 @@ class ViewerModel:
         zarr_file.attrs["target_Ts"] = list(map(int, self.target_Ts))
 
         logger.info("reading data ...")
-        self.label_layer.data = da.from_zarr(zarr_file["mask"]).persist()
+        self.label_layer.data = da.from_zarr(zarr_file["label"]).persist()
         logger.info("saving validation results finished")

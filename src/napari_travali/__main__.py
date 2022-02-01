@@ -3,7 +3,6 @@
 import io
 import logging
 import os
-import sys
 from os import path
 
 import click
@@ -12,7 +11,6 @@ import napari
 import numpy as np
 import pandas as pd
 import zarr
-from tqdm import tqdm
 
 from ._consts import LOGGING_PATH
 from ._logging import logger
@@ -33,7 +31,6 @@ def main() -> None:
     log_path = path.join(path.expanduser("~"), LOGGING_PATH)
     if not path.exists(path.dirname(log_path)):
         os.makedirs(path.dirname(log_path))
-    _root_logger = logging.getLogger()
     logging.basicConfig(filename=log_path, level=logging.INFO)
     logger.info("program started")
 
@@ -55,8 +52,8 @@ def main() -> None:
     ]
 
     if not read_travali:
-        mask = da.from_zarr(zarr_file["mask"])[:, np.newaxis, ...]
-        mask[mask == -1] = 0  # mask.max().compute() + 1
+        label = da.from_zarr(zarr_file["label"])[:, np.newaxis, ...]
+        label[label == -1] = 0  # label.max().compute() + 1
         df_segments2_buf = path.join(base_dir, "df_segments2_updated.csv")
         df_divisions2_buf = path.join(base_dir, "df_divisions2.csv")
 
@@ -65,20 +62,20 @@ def main() -> None:
     else:
         travali_zarr_path = zarr_path.replace(".zarr", "_travali.zarr")
         travali_zarr_file = zarr.open(travali_zarr_path, "r")
-        mask_ds = travali_zarr_file["mask"]
-        mask = da.from_zarr(mask_ds)  # .persist()
+        label_ds = travali_zarr_file["label"]
+        label = da.from_zarr(label_ds)  # .persist()
         df_segments2_buf = io.StringIO(
-            mask_ds.attrs["df_segments"].replace("\\n", "\n")
+            label_ds.attrs["df_segments"].replace("\\n", "\n")
         )
         df_divisions2_buf = io.StringIO(
-            mask_ds.attrs["df_divisions"].replace("\\n", "\n")
+            label_ds.attrs["df_divisions"].replace("\\n", "\n")
         )
-        finalized_segment_ids = set(mask_ds.attrs["finalized_segment_ids"])
-        candidate_segment_ids = set(mask_ds.attrs["candidate_segment_ids"])
-        target_Ts = sorted(mask_ds.attrs["target_Ts"])
+        finalized_segment_ids = set(label_ds.attrs["finalized_segment_ids"])
+        candidate_segment_ids = set(label_ds.attrs["candidate_segment_ids"])
+        target_Ts = sorted(label_ds.attrs["target_Ts"])
         #        green_signal=[np.any(im[1,0,:10,:10]>0).compute() for im in tqdm(image)]
-        #        target_Ts=list(np.arange(0,mask.shape[0]-3)[green_signal[:-3]])+list(mask.shape[0]-3+np.arange(3))
-        assert all(np.array(target_Ts) < mask.shape[0])
+        #        target_Ts=list(np.arange(0,label.shape[0]-3)[green_signal[:-3]])+list(label.shape[0]-3+np.arange(3))
+        assert all(np.array(target_Ts) < label.shape[0])
 
     df_segments2 = pd.read_csv(
         df_segments2_buf,
@@ -97,13 +94,13 @@ def main() -> None:
     df_divisions2 = df_divisions2.astype(pd.Int64Dtype())
 
     new_label_value = df_segments2.index.get_level_values("label").max() + 1
-    # assert not np.any(mask ==new_label_value)
+    # assert not np.any(label ==new_label_value)
     new_segment_id = df_segments2["segment_id"].max() + 1
 
     #### only extract information in target_Ts ####
     logger.info("extracting info")
 
-    mask[np.setdiff1d(np.arange(mask.shape[0]), target_Ts)] = 0
+    label[np.setdiff1d(np.arange(label.shape[0]), target_Ts)] = 0
 
     df_segments = df_segments2[
         df_segments2.index.get_level_values("frame").isin(target_Ts)
@@ -144,7 +141,7 @@ def main() -> None:
     logger.info("running viewer")
     _ = TravaliViewer(
         image,
-        mask,
+        label,
         target_Ts,
         df_segments,
         df_divisions,
