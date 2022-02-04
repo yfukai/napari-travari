@@ -40,7 +40,7 @@ $ pip install git+https://github.com/yfukai/napari-travali
 Currently we accept segmented / tracked data in the following
 format.
 
-- file format : `zarr`
+- file format : `zarr` (hopefully `HDF5` in future)
 
 - contents :
   - `Dataset` named `image` ... 5-dim dataset with dimensional order `TCZYX`
