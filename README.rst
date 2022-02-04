@@ -44,14 +44,11 @@ Currently we accept segmented / tracked data in the following format.
 -  **Original image**
 
    -  file format : ``zarr``
-
--  **Label image**
-
-   -  file format : ``zarr``
    -  contents :
-
-      -  ``Dataset`` named ``label`` … 5-dim dataset with dimensional
+      -  ``Dataset`` named ``image`` … 5-dim dataset with dimensional
          order ``TCZYX``
+      -  ``Dataset`` named ``label`` or ``label.travali`` … 5-dim dataset with dimensional
+         order ``TZYX``
       -  ``Dataset`` named ``df_segments``
       -  ``Dataset`` named ``df_divisions``
       -  ``attr`` named ``finalized_segment_ids``
