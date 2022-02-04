@@ -57,7 +57,7 @@ format.
     - `Dataset` name: `(dataset_name)`
       ... 2-dim dataset with columns (parent_segment_id, frame_child1, label_child1, frame_child2, label_child2)
 
-### Input data specification
+### Label loading logic
 
 - When reading file, `original.travali` is read if exits. If not, `original` is read.
 - When writing file,
