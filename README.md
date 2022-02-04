@@ -50,12 +50,12 @@ format.
       - `attr` named `target_Ts`
   - `Group` named `df_segments`
     - `Dataset` name: `(dataset_name)`
-      ... 2-dim dataset with columns
+      ... 2-dim dataset with columns (frame, label, segment_id, bbox_y0, bbox_y1, bbox_x0, bbox_x1)
     - `attr` named `finalized_segment_ids` ... (optional) list of finalized segment ids
     - `attr` named `candidate_segment_ids` ... (optional) list of candidate segment ids
   - `Group` named `df_divisions`
     - `Dataset` name: `(dataset_name)`
-      ... 2-dim dataset with columns
+      ... 2-dim dataset with columns (id, frame_child1, label_child1, frame_child2, label_child2)
 
 ### Input data specification
 
