@@ -202,7 +202,7 @@ class ViewerModel:
         self.label_layer.termination_annotation = ""
         # used to rewrite track on exit
 
-        row = self.df_divisions[self.df_divisions["segment_id_parent"] == segment_id]
+        row = self.df_divisions[self.df_divisions["parent_segment_id"] == segment_id]
         print(row)
         if len(row) == 1:
             self.frame_childs = list(row.iloc[0][["frame_child1", "frame_child2"]])
@@ -306,7 +306,7 @@ class ViewerModel:
             self.label_edited[frame:] = False
             # FIXME revert layer to original
             row = self.df_divisions[
-                self.df_divisions["segment_id_parent"] == segment_id
+                self.df_divisions["parent_segment_id"] == segment_id
             ]
 
             if len(row) == 1:
@@ -474,11 +474,11 @@ class ViewerModel:
 
             self.df_segments.loc[frame_labels, "segment_id"] = self.new_segment_id
             if np.any(frames == last_frame):
-                ind = self.df_divisions["segment_id_parent"] == original_segment_id
+                ind = self.df_divisions["parent_segment_id"] == original_segment_id
                 if np.any(ind):
                     assert np.sum(ind) == 1
                     self.df_divisions.loc[
-                        ind, "segment_id_parent"
+                        ind, "parent_segment_id"
                     ] = self.new_segment_id
             self.new_segment_id += 1
 
@@ -524,7 +524,7 @@ class ViewerModel:
             self.df_segments.loc[(redrawn_frame, label), "bbox_x0"] = bboxes[1][0]
             self.df_segments.loc[(redrawn_frame, label), "bbox_x1"] = bboxes[1][1]
 
-        ind = self.df_divisions["segment_id_parent"] == segment_id
+        ind = self.df_divisions["parent_segment_id"] == segment_id
         if np.any(ind):
             assert np.sum(ind) == 1
             self.df_divisions = self.df_divisions[~ind]
@@ -532,7 +532,7 @@ class ViewerModel:
 
         if len(frame_childs) > 0 and len(label_childs) > 0:
             assert len(frame_childs) == 2 and len(label_childs) == 2
-            division_row = {"segment_id_parent": segment_id}
+            division_row = {"parent_segment_id": segment_id}
             for j, (frame_child, label_child) in enumerate(
                 zip(frame_childs, label_childs)
             ):

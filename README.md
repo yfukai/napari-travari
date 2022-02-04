@@ -55,7 +55,7 @@ format.
     - `attr` named `candidate_segment_ids` ... (optional) list of candidate segment ids
   - `Group` named `df_divisions`
     - `Dataset` name: `(dataset_name)`
-      ... 2-dim dataset with columns (id, frame_child1, label_child1, frame_child2, label_child2)
+      ... 2-dim dataset with columns (parent_segment_id, frame_child1, label_child1, frame_child2, label_child2)
 
 ### Input data specification
 
