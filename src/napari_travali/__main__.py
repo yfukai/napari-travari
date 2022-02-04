@@ -12,28 +12,23 @@ import numpy as np
 import pandas as pd
 import zarr
 
+from ._consts import DF_DIVISIONS_COLUMNS
+from ._consts import DF_SEGMENTS_COLUMNS
 from ._consts import LOGGING_PATH
 from ._logging import logger
 from ._viewer import TravaliViewer
 
-DF_SEGMENTS_COLUMNS = ["segment_id", "bbox_y0", "bbox_y1", "bbox_x0", "bbox_x1"]
-DF_DIVISIONS_COLUMNS = [
-    "segment_id_parent",
-    "frame_child1",
-    "label_child1",
-    "frame_child2",
-    "label_child2",
-]
+
 LOGGING_PATH = ".travali/log.txt"
 
 
 @click.command()
-@click.argument("image_path", type=click.Path(exists=True))
-@click.argument("label_path", type=click.Path(exists=True))
+@click.argument("zarr_path", type=click.Path(exists=True))
+@click.argument("label_dataset_name", type=str, default="original")
 @click.option("--log_directory", "-l", type=click.Path(), default=LOGGING_PATH)
 @click.option("--persist", "-p", is_flag=True, default=False)
 @click.version_option()
-def main(image_path, label_path, log_directory, persist) -> None:
+def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
     """Napari Travali."""
 
     log_path = path.join(path.expanduser("~"), log_directory)
@@ -42,31 +37,32 @@ def main(image_path, label_path, log_directory, persist) -> None:
     logging.basicConfig(filename=log_path, level=logging.INFO)
     logger.info("program started")
 
-    zarr_file = zarr.open(image_path, "r")
+    zarr_file = zarr.open(zarr_path, "r")
     image = da.from_zarr(zarr_file["image"])
+    label_group = zarr_file["labels"]
+
+    travali_label_dataset_name = label_dataset_name + ".travali"
+    if travali_label_dataset_name in label_group.keys():
+        label_dataset_name = travali_label_dataset_name
+    label_ds = label_group[travali_label_dataset_name]
+    label = da.from_zarr(label_ds)
     if persist:
         image = image.persist()
+        label = label.persist()
     data_chunks = zarr_file["image"].chunks
 
-    if label_path is None:
-        label_path = image_path.replace(".zarr", "_travali.zarr")
-
-    label_zarr_file = zarr.open(label_path, "r")
-    label_ds = label_zarr_file["label"]
-    label = da.from_zarr(label_ds)  # .persist()
-    if persist:
-        label = label.persist()
-
-    df_segments = pd.DataFrame(
-        label_zarr_file["df_segments"], columns=DF_SEGMENTS_COLUMNS, index=0
-    )
+    segments_ds = zarr_file["df_segments"][label_dataset_name]
+    df_segments = pd.DataFrame(segments_ds, columns=DF_SEGMENTS_COLUMNS, index=0)
     df_divisions = pd.DataFrame(
-        label_zarr_file["df_segments"], columns=DF_DIVISIONS_COLUMNS, index=0
+        zarr_file["df_segments"][label_dataset_name],
+        columns=DF_DIVISIONS_COLUMNS,
+        index=0,
     )
 
-    finalized_segment_ids = set(label_zarr_file.attrs["finalized_segment_ids"])
-    candidate_segment_ids = set(label_zarr_file.attrs["candidate_segment_ids"])
-    target_Ts = sorted(label_zarr_file.attrs["target_Ts"])
+    finalized_segment_ids = set(segments_ds.attrs["finalized_segment_ids"])
+    candidate_segment_ids = set(segments_ds.attrs["candidate_segment_ids"])
+
+    target_Ts = sorted(label_ds.attrs["target_Ts"])
     assert all(np.array(target_Ts) < label.shape[0])
 
     new_label_value = df_segments.index.get_level_values("label").max() + 1
@@ -118,7 +114,8 @@ def main(image_path, label_path, log_directory, persist) -> None:
         target_Ts,
         df_segments,
         df_divisions,
-        label_path,
+        zarr_path,
+        label_dataset_name,
         data_chunks,
         new_segment_id,
         new_label_value,

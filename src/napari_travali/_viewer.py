@@ -20,6 +20,7 @@ class TravaliViewer:
         df_segments,
         df_divisions,
         zarr_path,
+        label_dataset_name,
         data_chunks,
         new_segment_id,
         new_label_value,
@@ -28,6 +29,7 @@ class TravaliViewer:
     ):
 
         self.zarr_path = zarr_path
+        self.label_dataset_name = label_dataset_name
         self.data_chunks = data_chunks
         self.target_Ts = sorted(list(map(int, target_Ts)))
 
@@ -145,7 +147,7 @@ class TravaliViewer:
         def save_typed(_event):
             logger.info("saving validation results...")
             self.viewer_model.save_results(
-                self.zarr_path.replace(".zarr", "_travali.zarr"), self.data_chunks
+                self.zarr_path, self.label_dataset_name, self.data_chunks
             )
             logger.info("done.")
 

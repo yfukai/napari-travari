@@ -39,21 +39,20 @@ Usage
 Input data specification
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+<!--
 Currently we accept segmented / tracked data in the following format.
 
--  **Original image**
-
-   -  file format : ``zarr``
-   -  contents :
-      -  ``Dataset`` named ``image`` … 5-dim dataset with dimensional
-         order ``TCZYX``
-      -  ``Dataset`` named ``label`` or ``label.travali`` … 5-dim dataset with dimensional
-         order ``TZYX``
+-  file format : ``zarr``
+-  contents :
+   -  ``Dataset`` named ``image`` … 5-dim dataset with dimensional order ``TCZYX``
+   -  ``Group`` named ``labels``
+      -  ``Dataset`` named ``original`` … 4-dim dataset with dimensional order ``TZYX``
+         -  ``attr`` named ``finalized_segment_ids``
+         -  ``attr`` named ``candidate_segment_ids``
+         -  ``attr`` named ``target_Ts``
       -  ``Dataset`` named ``df_segments``
       -  ``Dataset`` named ``df_divisions``
-      -  ``attr`` named ``finalized_segment_ids``
-      -  ``attr`` named ``candidate_segment_ids``
-      -  ``attr`` named ``target_Ts``
+-->
 
 Please see the `Command-line
 Reference <https://napari-travali.readthedocs.io/en/latest/usage.html>`__

@@ -1,5 +1,4 @@
 from enum import Enum
-from os import path
 from typing import List
 
 import dask.array as da
@@ -579,36 +578,55 @@ class ViewerModel:
         )
 
     @log_error
-    def save_results(self, zarr_path, chunks):
+    def save_results(self, zarr_path, label_dataset_name, chunks, persist):
         logger.info("saving validation results...")
-        if path.exists(zarr_path):
+
+        if not label_dataset_name.endswith(".travali"):
+            label_dataset_name += ".travali"
+        zarr_file = zarr.open(zarr_path, "a")
+        if label_dataset_name in zarr_file["labels"].keys():
             if_overwrite = ask_ok_or_not(
                 self.viewer, "Validation file already exists. Overwrite?"
             )
             if not if_overwrite:
+                logger.warning("label not saved")
                 return
         logger.info("saving label ...")
+
         # to avoid IO from/to the same array, save to a temp array and then rename
+        label_group = zarr_file["labels"]
         self.label_layer.data.rechunk(chunks).to_zarr(
-            zarr_path, "label_tmp", overwrite=True
+            label_group, f"{label_dataset_name}_tmp", overwrite=True
         )
-        zarr_file = zarr.open(zarr_path, "a")
-        del zarr_file["label"]
-        zarr_file.store.rename("label_tmp", "label")
+        del label_group[label_dataset_name]
+        label_group.store.rename(f"{label_dataset_name}_tmp", label_dataset_name)
+        label_group[label_dataset_name].attrs["target_Ts"] = list(
+            map(int, self.target_Ts)
+        )
 
         logger.info("saving segments...")
-        zarr_file["df_segments"] = self.df_segments.reset_index().astype(int).values
-        logger.info("saving divisions...")
-        zarr_file["df_divisions"] = self.df_divisions.reset_index().astype(int).values
-        logger.info("saving others...")
-        zarr_file.attrs["finalized_segment_ids"] = list(
+
+        segments_group = zarr_file["df_segments"]
+        if label_dataset_name in segments_group.keys():
+            del segments_group[label_dataset_name]
+        segments_ds = segments_group.create_dataset(
+            label_dataset_name, data=self.df_segments.reset_index().astype(int).values
+        )
+        segments_ds.attrs["finalized_segment_ids"] = list(
             map(int, self.finalized_segment_ids)
         )
-        zarr_file.attrs["candidate_segment_ids"] = list(
+        segments_ds.attrs["candidate_segment_ids"] = list(
             map(int, self.candidate_segment_ids)
         )
-        zarr_file.attrs["target_Ts"] = list(map(int, self.target_Ts))
-
+        logger.info("saving divisions...")
+        divisions_group = zarr_file["df_divisions"]
+        if label_dataset_name in divisions_group.keys():
+            del divisions_group[label_dataset_name]
+        divisions_group.create_dataset(
+            label_dataset_name, data=self.df_divisions.reset_index().astype(int).values
+        )
         logger.info("reading data ...")
-        self.label_layer.data = da.from_zarr(zarr_file["label"]).persist()
+        self.label_layer.data = da.from_zarr(label_group[label_dataset_name])
+        if persist:
+            self.label_layer.data = self.label_layer.data.persist()
         logger.info("saving validation results finished")
