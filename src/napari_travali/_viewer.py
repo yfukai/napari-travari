@@ -1,4 +1,5 @@
 import napari
+napari.utils.resize_dask_cache(0)
 import numpy as np
 from dask import array as da
 from transitions import Machine
@@ -38,13 +39,17 @@ class TravaliViewer:
         self.viewer = napari.Viewer()
         contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
         self.viewer.add_image(image, contrast_limits=contrast_limits)
-        self.label_layer = self.viewer.add_labels(label, name="label")
+        self.label_layer = self.viewer.add_labels(label, name="label",
+          #  cache=False
+            )
         self.sel_label_layer = self.viewer.add_labels(
-            da.zeros_like(label, dtype=np.uint8), name="Selected label"
+            da.zeros_like(label, dtype=np.uint8), name="Selected label",
+          #  cache=False
         )
         self.sel_label_layer.contour = 3
         self.redraw_label_layer = self.viewer.add_labels(
-            np.zeros(label.shape[-3:], dtype=np.uint8), name="Drawing"
+            np.zeros(label.shape[-3:], dtype=np.uint8), name="Drawing",
+          #  cache=False
         )
         self.finalized_label_layer = self.viewer.add_labels(
             da.zeros_like(label, dtype=np.uint8),
@@ -52,6 +57,7 @@ class TravaliViewer:
             # color ={1:"red"}, not working
             opacity=1.0,
             blending="opaque",
+          #nd  cache=False
         )
         self.finalized_label_layer.contour = 3
 

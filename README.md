@@ -72,6 +72,10 @@ for details.
 
 ### Modes and editing commands
 
+- Common operations
+  - Typing `Shift + Left` ... move to the previous timeframe in `target_Ts`
+  - Typing `Shift + Right` ... move to the next timeframe in `target_Ts`
+
 - `All label`
   - Clicking a label ... select the label and to `Label selected`
 - `Label selected`
