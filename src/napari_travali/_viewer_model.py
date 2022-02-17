@@ -9,6 +9,7 @@ import zarr
 
 from ._consts import NEW_LABEL_VALUE
 from ._consts import NOSEL_VALUE
+from ._consts import DF_DIVISIONS_COLUMNS, DF_SEGMENTS_COLUMNS
 from ._gui_utils import ask_draw_label
 from ._gui_utils import ask_ok_or_not
 from ._gui_utils import choose_direction_by_mbox
@@ -610,7 +611,7 @@ class ViewerModel:
         if label_dataset_name in segments_group.keys():
             del segments_group[label_dataset_name]
         segments_ds = segments_group.create_dataset(
-            label_dataset_name, data=self.df_segments.reset_index().astype(int).values
+            label_dataset_name, data=self.df_segments.reset_index()[DF_SEGMENTS_COLUMNS].astype(int).values
         )
         segments_ds.attrs["finalized_segment_ids"] = list(
             map(int, self.finalized_segment_ids)
@@ -623,7 +624,7 @@ class ViewerModel:
         if label_dataset_name in divisions_group.keys():
             del divisions_group[label_dataset_name]
         divisions_group.create_dataset(
-            label_dataset_name, data=self.df_divisions.reset_index().astype(int).values
+            label_dataset_name, data=self.df_divisions.reset_index()[DF_DIVISIONS_COLUMNS].astype(int).values
         )
         logger.info("reading data ...")
         self.label_layer.data = da.from_zarr(label_group[label_dataset_name][:,np.newaxis,:,:,:])

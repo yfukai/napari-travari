@@ -53,11 +53,10 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
     data_chunks = zarr_file["image"].chunks
 
     segments_ds = zarr_file["df_segments"][label_dataset_name]
-    df_segments = pd.DataFrame(segments_ds, columns=DF_SEGMENTS_COLUMNS, index=0)
+    df_segments = pd.DataFrame(segments_ds, columns=DF_SEGMENTS_COLUMNS).set_index(["frame","label"])
     df_divisions = pd.DataFrame(
-        zarr_file["df_segments"][label_dataset_name],
+        zarr_file["df_divisions"][label_dataset_name],
         columns=DF_DIVISIONS_COLUMNS,
-        index=0,
     )
 
     finalized_segment_ids = set(segments_ds.attrs["finalized_segment_ids"])
@@ -73,6 +72,8 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
     logger.info("extracting info")
 
     label[np.setdiff1d(np.arange(label.shape[0]), target_Ts)] = 0
+
+    logger.info("organizing dataframes")
     df_segments = df_segments[
         df_segments.index.get_level_values("frame").isin(target_Ts)
     ].copy()
