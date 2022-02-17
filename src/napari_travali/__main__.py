@@ -44,7 +44,7 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
     travali_label_dataset_name = label_dataset_name + ".travali"
     if travali_label_dataset_name in label_group.keys():
         label_dataset_name = travali_label_dataset_name
-    label_ds = label_group[travali_label_dataset_name]
+    label_ds = label_group[label_dataset_name]
     label = da.from_zarr(label_ds)
     if persist:
         image = image.persist()
