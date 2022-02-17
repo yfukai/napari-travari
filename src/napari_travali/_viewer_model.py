@@ -607,7 +607,7 @@ class ViewerModel:
         label_data.to_zarr(ds,overwrite=True)
         if label_dataset_name in label_group.keys():
             del label_group[label_dataset_name]
-        label_group.store.rename(ds.name, f"{label_group.name}/label_dataset_name")
+        label_group.store.rename(ds.name, f"{label_group.name}/{label_dataset_name}")
         label_group[label_dataset_name].attrs["target_Ts"] = list(
             map(int, self.target_Ts)
         )
@@ -634,7 +634,7 @@ class ViewerModel:
             label_dataset_name, data=self.df_divisions.reset_index()[DF_DIVISIONS_COLUMNS].astype(int).values
         )
         logger.info("reading data ...")
-        self.label_layer.data = da.from_zarr(label_group[label_dataset_name][:,np.newaxis,:,:,:])
+        self.label_layer.data = da.from_zarr(label_group[label_dataset_name])[:,np.newaxis,:,:,:]
         if persist:
             self.label_layer.data = self.label_layer.data.persist()
         logger.info("saving validation results finished")
