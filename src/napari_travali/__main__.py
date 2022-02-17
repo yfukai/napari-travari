@@ -49,6 +49,7 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
     if persist:
         image = image.persist()
         label = label.persist()
+    label=label[:,np.newaxis,:,:,:]
     data_chunks = zarr_file["image"].chunks
 
     segments_ds = zarr_file["df_segments"][label_dataset_name]

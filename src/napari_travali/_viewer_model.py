@@ -595,7 +595,7 @@ class ViewerModel:
 
         # to avoid IO from/to the same array, save to a temp array and then rename
         label_group = zarr_file["labels"]
-        self.label_layer.data.rechunk(chunks).to_zarr(
+        self.label_layer.data[:,0,:,:,:].rechunk(chunks).to_zarr(
             label_group, f"{label_dataset_name}_tmp", overwrite=True
         )
         del label_group[label_dataset_name]
@@ -626,7 +626,7 @@ class ViewerModel:
             label_dataset_name, data=self.df_divisions.reset_index().astype(int).values
         )
         logger.info("reading data ...")
-        self.label_layer.data = da.from_zarr(label_group[label_dataset_name])
+        self.label_layer.data = da.from_zarr(label_group[label_dataset_name][:,np.newaxis,:,:,:])
         if persist:
             self.label_layer.data = self.label_layer.data.persist()
         logger.info("saving validation results finished")
