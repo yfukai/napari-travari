@@ -1,12 +1,10 @@
 # Napari Travali
 
-```{=html}
 <!--
 [![PyPI](https://img.shields.io/pypi/v/napari-travali.svg)](https://pypi.org/project/napari-travali/)
 [![Status](https://img.shields.io/pypi/status/napari-travali.svg)](https://pypi.org/project/napari-travali/)
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-travali)](https://pypi.org/project/napari-travali)
 -->
-```
 
 [![License](https://img.shields.io/pypi/l/napari-travali)](https://opensource.org/licenses/MIT)
 
@@ -26,8 +24,8 @@ Napari TRAck VALIdator
 
 ## Installation
 
-Currently at this early stage, you can install Napari Travali only fron
-GitHub You can install _Napari Travali_ via G
+Currently at this early stage, you can install Napari Travali only from
+GitHub
 
 ```console
 $ pip install git+https://github.com/yfukai/napari-travali
@@ -67,6 +65,30 @@ format.
 Please see the [Command-line
 Reference](https://napari-travali.readthedocs.io/en/latest/usage.html)
 for details.
+
+### Modes and editing commands
+
+- `All label`
+  - Clicking a label ... select the label and to `Label selected`
+- `Label selected`
+  - Typing `Escape` ... cancel editing and to `All label`
+  - Typing `Enter` ... finalize editing and to `All label`
+  - Typing `r` ... Redrawing the segmentation. Transition to `Label redraw`
+  - Typing `s` ... Switching the segmented area. Transition to `Label switch`
+  - Typing `d` ... Modifying the daughter areas. Transition to `Daughter switch` or `Daughter draw` (asks before transition)
+  - Typing `t` ... Marking termination
+- `Label redraw`
+  - Typing `Escape` ... cancel redraw and make transition to `Label selected`
+  - Typing `Enter` ... finalize redraw and make transition to `Label selected`
+- `Label switch`
+  - Typing `Escape` ... cancel switch and make transition to `Label selected`
+  - Clicking a label ... select the label to switch and make transition to `Label selected`
+- `Daughter switch`
+  - Typing `Escape` ... cancel choosing daughters and make transition to `Label selected`
+  - Clicking a label ... select the label as a daughter and make transition to either of `Daughter switch` or `Daughter draw` (asks before transition) or `Label selected` (if you already selected two daughters)
+- `Daughter draw`
+  - Typing `Escape` ... cancel choosing daughters and to `Label selected`
+  - Typing `Enter` ... finalize drawing a daughter and make transition to either of `Daughter switch` or `Daughter draw` (asks before transition) or `Label selected` (if you already selected two daughters)
 
 ## Contributing
 

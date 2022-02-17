@@ -19,3 +19,5 @@ DF_DIVISIONS_COLUMNS = [
     "frame_child2",
     "label_child2",
 ]
+
+LOGGING_PATH = ".napari-travali/log.txt"
