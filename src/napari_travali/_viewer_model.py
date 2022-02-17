@@ -596,11 +596,18 @@ class ViewerModel:
 
         # to avoid IO from/to the same array, save to a temp array and then rename
         label_group = zarr_file["labels"]
-        self.label_layer.data[:,0,:,:,:].rechunk(chunks).to_zarr(
-            label_group, f"{label_dataset_name}_tmp", overwrite=True
-        )
-        del label_group[label_dataset_name]
-        label_group.store.rename(f"{label_dataset_name}_tmp", label_dataset_name)
+        label_chunks=[chunks[0],*chunks[2:]]
+        label_data=self.label_layer.data[:,0,:,:,:].rechunk(label_chunks)
+        ds=label_group.create_dataset(
+            f"{label_dataset_name}_tmp",
+            shape=label_data.shape,
+            dtype=label_data.dtype,
+            chunks=label_chunks,
+            overwrite=True)
+        label_data.to_zarr(ds,overwrite=True)
+        if label_dataset_name in label_group.keys():
+            del label_group[label_dataset_name]
+        label_group.store.rename(ds.name, f"{label_group.name}/label_dataset_name")
         label_group[label_dataset_name].attrs["target_Ts"] = list(
             map(int, self.target_Ts)
         )

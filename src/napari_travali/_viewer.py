@@ -26,12 +26,14 @@ class TravaliViewer:
         new_label_value,
         finalized_segment_ids,
         candidate_segment_ids,
+        persist
     ):
 
         self.zarr_path = zarr_path
         self.label_dataset_name = label_dataset_name
         self.data_chunks = data_chunks
         self.target_Ts = sorted(list(map(int, target_Ts)))
+        self.persist = persist
 
         self.viewer = napari.Viewer()
         contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
@@ -147,7 +149,7 @@ class TravaliViewer:
         def save_typed(_event):
             logger.info("saving validation results...")
             self.viewer_model.save_results(
-                self.zarr_path, self.label_dataset_name, self.data_chunks
+                self.zarr_path, self.label_dataset_name, self.data_chunks, self.persist
             )
             logger.info("done.")
 

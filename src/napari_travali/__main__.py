@@ -123,6 +123,7 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
         new_label_value,
         finalized_segment_ids,
         candidate_segment_ids,
+        persist
     )
     napari.run()
 
