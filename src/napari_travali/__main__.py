@@ -49,11 +49,13 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
     if persist:
         image = image.persist()
         label = label.persist()
-    label=label[:,np.newaxis,:,:,:]
+    label = label[:, np.newaxis, :, :, :]
     data_chunks = zarr_file["image"].chunks
 
     segments_ds = zarr_file["df_segments"][label_dataset_name]
-    df_segments = pd.DataFrame(segments_ds, columns=DF_SEGMENTS_COLUMNS).set_index(["frame","label"])
+    df_segments = pd.DataFrame(segments_ds, columns=DF_SEGMENTS_COLUMNS).set_index(
+        ["frame", "label"]
+    )
     df_divisions = pd.DataFrame(
         zarr_file["df_divisions"][label_dataset_name],
         columns=DF_DIVISIONS_COLUMNS,
@@ -61,6 +63,7 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
 
     finalized_segment_ids = set(segments_ds.attrs["finalized_segment_ids"])
     candidate_segment_ids = set(segments_ds.attrs["candidate_segment_ids"])
+    termination_annotations = segments_ds.attrs.get("termination_annotations", {})
 
     target_Ts = sorted(label_ds.attrs["target_Ts"])
     assert all(np.array(target_Ts) < label.shape[0])
@@ -123,7 +126,8 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
         new_label_value,
         finalized_segment_ids,
         candidate_segment_ids,
-        persist
+        termination_annotations,
+        persist,
     )
     napari.run()
 

@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Dict
 from typing import List
 
 import dask.array as da
@@ -7,9 +8,10 @@ import numpy as np
 import pandas as pd
 import zarr
 
+from ._consts import DF_DIVISIONS_COLUMNS
+from ._consts import DF_SEGMENTS_COLUMNS
 from ._consts import NEW_LABEL_VALUE
 from ._consts import NOSEL_VALUE
-from ._consts import DF_DIVISIONS_COLUMNS, DF_SEGMENTS_COLUMNS
 from ._gui_utils import ask_draw_label
 from ._gui_utils import ask_ok_or_not
 from ._gui_utils import choose_direction_by_mbox
@@ -53,6 +55,7 @@ class ViewerModel:
         new_label_value: int,
         finalized_segment_ids: List[int],
         candidate_segment_ids: List[int],
+        termination_annotations: Dict[int, str],
     ):
         """Initialize the model
 
@@ -72,6 +75,8 @@ class ViewerModel:
             the list of segment ids that have been finalized
         candidate_segment_ids : List[int]
             the list of segment ids that are candidates for annotation
+        termination_annotations : Dict[int,str]
+            the dict for association between segment_id and termination annotation
         """
         self.selected_label = None
         self.segment_id = None
@@ -79,7 +84,6 @@ class ViewerModel:
         self.label_childs = None
         self.segment_labels = None
         self.label_edited = None
-        self.termination_annotation = ""
 
         self.target_Ts = list(travali_viewer.target_Ts)
         self.viewer = travali_viewer.viewer
@@ -87,6 +91,7 @@ class ViewerModel:
         self.redraw_label_layer = travali_viewer.redraw_label_layer
         self.sel_label_layer = travali_viewer.sel_label_layer
         self.finalized_label_layer = travali_viewer.finalized_label_layer
+        self.termination_annotation = ""
         self.shape = self.label_layer.data.shape
         self.sizeT = self.label_layer.data.shape[0]
 
@@ -96,6 +101,7 @@ class ViewerModel:
         self.new_label_value = new_label_value
         self.finalized_segment_ids = finalized_segment_ids
         self.candidate_segment_ids = candidate_segment_ids
+        self.termination_annotations = termination_annotations
         self.finalized_label_layer.data = self.label_layer.data.map_blocks(
             self.__label_to_finalized_label, dtype=np.uint8
         )
@@ -200,7 +206,6 @@ class ViewerModel:
         self.label_edited = np.zeros(len(segment_labels), dtype=bool)
         self.segment_labels = segment_labels
         self.original_segment_labels = segment_labels.copy()
-        self.label_layer.termination_annotation = ""
         # used to rewrite track on exit
 
         row = self.df_divisions[self.df_divisions["parent_segment_id"] == segment_id]
@@ -573,6 +578,7 @@ class ViewerModel:
 
         self.finalized_segment_ids.add(segment_id)
         self.candidate_segment_ids.discard(segment_id)
+        self.termination_annotations[segment_id] = self.termination_annotation
 
         self.finalized_label_layer.data = self.label_layer.data.map_blocks(
             self.__label_to_finalized_label, dtype=np.uint8
@@ -596,15 +602,16 @@ class ViewerModel:
 
         # to avoid IO from/to the same array, save to a temp array and then rename
         label_group = zarr_file["labels"]
-        label_chunks=[chunks[0],*chunks[2:]]
-        label_data=self.label_layer.data[:,0,:,:,:].rechunk(label_chunks)
-        ds=label_group.create_dataset(
+        label_chunks = [chunks[0], *chunks[2:]]
+        label_data = self.label_layer.data[:, 0, :, :, :].rechunk(label_chunks)
+        ds = label_group.create_dataset(
             f"{label_dataset_name}_tmp",
             shape=label_data.shape,
             dtype=label_data.dtype,
             chunks=label_chunks,
-            overwrite=True)
-        label_data.to_zarr(ds,overwrite=True)
+            overwrite=True,
+        )
+        label_data.to_zarr(ds, overwrite=True)
         if label_dataset_name in label_group.keys():
             del label_group[label_dataset_name]
         label_group.store.rename(ds.name, f"{label_group.name}/{label_dataset_name}")
@@ -618,7 +625,8 @@ class ViewerModel:
         if label_dataset_name in segments_group.keys():
             del segments_group[label_dataset_name]
         segments_ds = segments_group.create_dataset(
-            label_dataset_name, data=self.df_segments.reset_index()[DF_SEGMENTS_COLUMNS].astype(int).values
+            label_dataset_name,
+            data=self.df_segments.reset_index()[DF_SEGMENTS_COLUMNS].astype(int).values,
         )
         segments_ds.attrs["finalized_segment_ids"] = list(
             map(int, self.finalized_segment_ids)
@@ -626,15 +634,25 @@ class ViewerModel:
         segments_ds.attrs["candidate_segment_ids"] = list(
             map(int, self.candidate_segment_ids)
         )
+        segments_ds.attrs["termination_annotations"] = {
+            int(k): str(v) for k, v in self.termination_annotations.items()
+        }
+
         logger.info("saving divisions...")
+
         divisions_group = zarr_file["df_divisions"]
         if label_dataset_name in divisions_group.keys():
             del divisions_group[label_dataset_name]
         divisions_group.create_dataset(
-            label_dataset_name, data=self.df_divisions.reset_index()[DF_DIVISIONS_COLUMNS].astype(int).values
+            label_dataset_name,
+            data=self.df_divisions.reset_index()[DF_DIVISIONS_COLUMNS]
+            .astype(int)
+            .values,
         )
         logger.info("reading data ...")
-        self.label_layer.data = da.from_zarr(label_group[label_dataset_name])[:,np.newaxis,:,:,:]
+        self.label_layer.data = da.from_zarr(label_group[label_dataset_name])[
+            :, np.newaxis, :, :, :
+        ]
         if persist:
             self.label_layer.data = self.label_layer.data.persist()
         logger.info("saving validation results finished")

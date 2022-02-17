@@ -1,5 +1,4 @@
 import napari
-napari.utils.resize_dask_cache(0)
 import numpy as np
 from dask import array as da
 from transitions import Machine
@@ -27,7 +26,8 @@ class TravaliViewer:
         new_label_value,
         finalized_segment_ids,
         candidate_segment_ids,
-        persist
+        termination_annotations,
+        persist,
     ):
 
         self.zarr_path = zarr_path
@@ -39,17 +39,21 @@ class TravaliViewer:
         self.viewer = napari.Viewer()
         contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
         self.viewer.add_image(image, contrast_limits=contrast_limits)
-        self.label_layer = self.viewer.add_labels(label, name="label",
-          #  cache=False
-            )
+        self.label_layer = self.viewer.add_labels(
+            label,
+            name="label",
+            #  cache=False
+        )
         self.sel_label_layer = self.viewer.add_labels(
-            da.zeros_like(label, dtype=np.uint8), name="Selected label",
-          #  cache=False
+            da.zeros_like(label, dtype=np.uint8),
+            name="Selected label",
+            #  cache=False
         )
         self.sel_label_layer.contour = 3
         self.redraw_label_layer = self.viewer.add_labels(
-            np.zeros(label.shape[-3:], dtype=np.uint8), name="Drawing",
-          #  cache=False
+            np.zeros(label.shape[-3:], dtype=np.uint8),
+            name="Drawing",
+            #  cache=False
         )
         self.finalized_label_layer = self.viewer.add_labels(
             da.zeros_like(label, dtype=np.uint8),
@@ -57,7 +61,7 @@ class TravaliViewer:
             # color ={1:"red"}, not working
             opacity=1.0,
             blending="opaque",
-          #nd  cache=False
+            # nd  cache=False
         )
         self.finalized_label_layer.contour = 3
 
@@ -69,6 +73,7 @@ class TravaliViewer:
             new_label_value=new_label_value,
             finalized_segment_ids=finalized_segment_ids,
             candidate_segment_ids=candidate_segment_ids,
+            termination_annotations=termination_annotations,
         )
         self.machine = Machine(
             model=self.viewer_model,
