@@ -34,7 +34,8 @@ $ pip install git+https://github.com/yfukai/napari-travali
 ## Usage
 ### How to run
 ```console
-python -m napari_travali /path/to/zarr --presist # to for small-scaled dataset
+python -m napari_travali /path/to/zarr
+# python -m napari_travali /path/to/zarr --presist # to for small-scaled dataset
 ```
 
 ### Input data specification
