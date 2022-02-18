@@ -209,6 +209,8 @@ class ViewerModel:
         # used to rewrite track on exit
 
         row = self.df_divisions[self.df_divisions["parent_segment_id"] == segment_id]
+        print("segment id:", segment_id)
+        print(segment_labels)
         print(row)
         if len(row) == 1:
             self.frame_childs = list(row.iloc[0][["frame_child1", "frame_child2"]])
