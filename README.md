@@ -75,6 +75,7 @@ for details.
 - Common operations
   - Typing `Shift + Left` ... move to the previous timeframe in `target_Ts`
   - Typing `Shift + Right` ... move to the next timeframe in `target_Ts`
+  - Typing `Control + Shift + Alt + s` ... save the manual validation result
 
 - `All label`
   - Clicking a label ... select the label and to `Label selected`
