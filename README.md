@@ -49,12 +49,12 @@ format.
   - `Group` named `labels`
     - `Dataset` (default name `original` or `original.travali`, let name: `(dataset_name)`)
       ... 4-dim dataset with dimensional order `TZYX`
-      - `attr` named `target_Ts`
+      - `attr` named `target_Ts` ... target time frame indices for manual track validation (masks in the other frames are ignored)
   - `Group` named `df_segments`
     - `Dataset` name: `(dataset_name)`
       ... 2-dim dataset with columns (frame, label, segment_id, bbox_y0, bbox_y1, bbox_x0, bbox_x1)
-    - `attr` named `finalized_segment_ids` ... (optional) list of finalized segment ids
-    - `attr` named `candidate_segment_ids` ... (optional) list of candidate segment ids
+      - `attr` named `finalized_segment_ids` ... (optional) list of finalized segment ids
+      - `attr` named `candidate_segment_ids` ... (optional) list of candidate segment ids
   - `Group` named `df_divisions`
     - `Dataset` name: `(dataset_name)`
       ... 2-dim dataset with columns (parent_segment_id, frame_child1, label_child1, frame_child2, label_child2)
