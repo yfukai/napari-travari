@@ -54,5 +54,5 @@ def ask_ok_or_not(viewer, message):
 
 def get_annotation_of_track_end(viewer, text=""):
     return QInputDialog.getText(
-        viewer.window.qt_viewer, "Input dialog", "Annotate the track end:", text=text
+        None, "Input dialog", "Annotate the track end:", text=text
     )
