@@ -209,6 +209,8 @@ class ViewerModel:
         # used to rewrite track on exit
 
         row = self.df_divisions[self.df_divisions["parent_segment_id"] == segment_id]
+        print("segment id:", segment_id)
+        print(segment_labels)
         print(row)
         if len(row) == 1:
             self.frame_childs = list(row.iloc[0][["frame_child1", "frame_child2"]])
@@ -404,7 +406,8 @@ class ViewerModel:
     @log_error
     def mark_termination(self):
         iT = self.viewer.dims.current_step[0]
-        termination_annotation, res = get_annotation_of_track_end(self.viewer)
+        termination_annotation, res = get_annotation_of_track_end(self.viewer,
+            self.termination_annotations.get(self.segment_id,""))
         if res:
             logger.info("marking termination: {termination_annotation}")
             self.termination_annotation = termination_annotation

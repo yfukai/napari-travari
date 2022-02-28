@@ -42,18 +42,18 @@ class TravaliViewer:
         self.label_layer = self.viewer.add_labels(
             label,
             name="label",
-            #  cache=False
+            cache=False
         )
         self.sel_label_layer = self.viewer.add_labels(
             da.zeros_like(label, dtype=np.uint8),
             name="Selected label",
-            #  cache=False
+            cache=False
         )
         self.sel_label_layer.contour = 3
         self.redraw_label_layer = self.viewer.add_labels(
             np.zeros(label.shape[-3:], dtype=np.uint8),
             name="Drawing",
-            #  cache=False
+            cache=False
         )
         self.finalized_label_layer = self.viewer.add_labels(
             da.zeros_like(label, dtype=np.uint8),
@@ -61,7 +61,7 @@ class TravaliViewer:
             # color ={1:"red"}, not working
             opacity=1.0,
             blending="opaque",
-            # nd  cache=False
+            cache=False
         )
         self.finalized_label_layer.contour = 3
 

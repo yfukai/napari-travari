@@ -63,7 +63,8 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
 
     finalized_segment_ids = set(segments_ds.attrs["finalized_segment_ids"])
     candidate_segment_ids = set(segments_ds.attrs["candidate_segment_ids"])
-    termination_annotations = segments_ds.attrs.get("termination_annotations", {})
+    termination_annotations = { int(k):str(v) 
+        for k,v in segments_ds.attrs.get("termination_annotations", {}).items()}
 
     target_Ts = sorted(label_ds.attrs["target_Ts"])
     assert all(np.array(target_Ts) < label.shape[0])
