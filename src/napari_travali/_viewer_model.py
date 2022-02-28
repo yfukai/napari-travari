@@ -406,8 +406,9 @@ class ViewerModel:
     @log_error
     def mark_termination(self):
         iT = self.viewer.dims.current_step[0]
-        termination_annotation, res = get_annotation_of_track_end(self.viewer,
-            self.termination_annotations.get(self.segment_id,""))
+        termination_annotation, res = get_annotation_of_track_end(
+            self.viewer, self.termination_annotations.get(self.segment_id, "")
+        )
         if res:
             logger.info("marking termination: {termination_annotation}")
             self.termination_annotation = termination_annotation
@@ -517,8 +518,13 @@ class ViewerModel:
                 )
             else:
                 label = self.new_label_value
-                self.df_segments = self.df_segments.append(
-                    pd.Series({"segment_id": segment_id}, name=(redrawn_frame, label))
+                self.df_segments = pd.concat(
+                    [
+                        self.df_segments,
+                        pd.Series(
+                            {"segment_id": segment_id}, name=(redrawn_frame, label)
+                        ),
+                    ]
                 )
                 self.new_label_value += 1
 
@@ -557,17 +563,20 @@ class ViewerModel:
                         label_child[0], frame_child, self.new_label_value
                     )
                     division_row[f"label_child{j+1}"] = self.new_label_value
-                    self.df_segments = self.df_segments.append(
-                        pd.Series(
-                            {
-                                "segment_id": self.new_segment_id,
-                                "bbox_y0": bboxes[0][0],
-                                "bbox_y1": bboxes[0][1],
-                                "bbox_x0": bboxes[1][0],
-                                "bbox_x1": bboxes[1][1],
-                            },
-                            name=(frame_child, self.new_label_value),
-                        )
+                    self.df_segments = pd.concat(
+                        [
+                            self.df_segments,
+                            pd.Series(
+                                {
+                                    "segment_id": self.new_segment_id,
+                                    "bbox_y0": bboxes[0][0],
+                                    "bbox_y1": bboxes[0][1],
+                                    "bbox_x0": bboxes[1][0],
+                                    "bbox_x1": bboxes[1][1],
+                                },
+                                name=(frame_child, self.new_label_value),
+                            ),
+                        ]
                     )
                     segment_id_child = self.new_segment_id
                     self.new_segment_id += 1
@@ -575,8 +584,11 @@ class ViewerModel:
                 if not segment_id_child in self.finalized_segment_ids:
                     logger.info(f"candidate adding ... {segment_id_child}")
                     self.candidate_segment_ids.add(segment_id_child)
-            self.df_divisions = self.df_divisions.append(
-                division_row, ignore_index=True
+            self.df_divisions = pd.concat(
+                [
+                    self.df_divisions,
+                    division_row,
+                ]
             )
 
         self.finalized_segment_ids.add(segment_id)
