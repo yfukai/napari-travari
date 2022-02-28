@@ -1,3 +1,4 @@
+from napari.qt import get_stylesheet
 from qtpy.QtWidgets import QInputDialog
 from qtpy.QtWidgets import QMessageBox
 
@@ -5,17 +6,18 @@ from ._logging import logger
 
 
 def __choose_by_mbox(viewer, choices, message):
-    msgBox = QMessageBox(viewer.window.qt_viewer)
-    msgBox.setText(message)
-    msgBox.setIcon(QMessageBox.Question)
+    msgbox = QMessageBox()
+    msgbox.setStyleSheet(get_stylesheet(viewer.theme))
+    msgbox.setText(message)
+    msgbox.setIcon(QMessageBox.Question)
     buttons = []
     for choice in choices:
-        button = msgBox.addButton(choice, QMessageBox.ActionRole)
+        button = msgbox.addButton(choice, QMessageBox.ActionRole)
         buttons.append(button)
-    cancelled = msgBox.addButton(QMessageBox.Cancel)
+    cancelled = msgbox.addButton(QMessageBox.Cancel)
     logger.info("messagebox selected")
-    _ = msgBox.exec_()
-    clicked_button = msgBox.clickedButton()
+    _ = msgbox.exec_()
+    clicked_button = msgbox.clickedButton()
 
     if clicked_button == cancelled:
         return False
@@ -51,6 +53,8 @@ def ask_ok_or_not(viewer, message):
 
 
 def get_annotation_of_track_end(viewer):
-    return QInputDialog.getText(
+    dialogbox = QInputDialog.getText(
         viewer.window.qt_viewer, "Input dialog", "Annotate the track end:"
     )
+    dialogbox.setStyleSheet(get_stylesheet(viewer.theme))
+    return dialogbox

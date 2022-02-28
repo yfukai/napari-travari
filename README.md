@@ -32,7 +32,9 @@ $ pip install git+https://github.com/yfukai/napari-travali
 ```
 
 ## Usage
+
 ### How to run
+
 ```console
 python -m napari_travali /path/to/zarr --presist # to for small-scaled dataset
 ```
@@ -73,6 +75,7 @@ for details.
 ### Modes and editing commands
 
 - Common operations
+
   - Typing `Shift + Left` ... move to the previous timeframe in `target_Ts`
   - Typing `Shift + Right` ... move to the next timeframe in `target_Ts`
 
