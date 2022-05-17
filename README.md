@@ -1,4 +1,4 @@
-# Napari Travali
+# Napari-Travali
 
 <!--
 [![PyPI](https://img.shields.io/pypi/v/napari-travali.svg)](https://pypi.org/project/napari-travali/)
@@ -8,15 +8,19 @@
 
 [![License](https://img.shields.io/pypi/l/napari-travali)](https://opensource.org/licenses/MIT)
 
+<!--
 [![Read the documentation at
 <https://napari-travali.readthedocs.io/>](https://img.shields.io/readthedocs/napari-travali/latest.svg?label=Read%20the%20Docs)](https://napari-travali.readthedocs.io/)
 [![Tests](https://github.com/yfukai/napari-travali/workflows/Tests/badge.svg)](https://github.com/yfukai/napari-travali/actions?workflow=Tests)
 [![Codecov](https://codecov.io/gh/yfukai/napari-travali/branch/main/graph/badge.svg)](https://codecov.io/gh/yfukai/napari-travali)
+-->
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-Napari TRAck VALIdator
+:warning: :construction: :construction_worker: Still work in progress, early-alpha! There can be any changes in API. :warning: :construction: :construction_worker:
+
+Napari TRAck VALIdator ... a software for manual track / segmentation validation
 
 ## Features
 
@@ -37,7 +41,7 @@ $ pip install git+https://github.com/yfukai/napari-travali
 
 ```console
 python -m napari_travali /path/to/zarr
-# python -m napari_travali /path/to/zarr --presist # to for small-scaled dataset
+# python -m napari_travali /path/to/zarr --presist # for a small-scale dataset
 ```
 
 ### Input data specification
