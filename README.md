@@ -24,8 +24,11 @@ Napari TRAck VALIdator ... a software for manual track / segmentation validation
 
 ## Features
 
-- Enables manual validation of cell tracking results.
+Enables manual validation and editing of cell tracking results.
+
+- Switching tracks
   ![switch_demo](screen_casts/napari-switch-example.gif)
+- Redrawing segmentation
 
 ## Installation
 
