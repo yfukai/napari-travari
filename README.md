@@ -29,6 +29,8 @@ Enables manual validation and editing of cell tracking results.
 - Switching tracks
   ![switch_demo](screen_casts/napari-switch-example.gif)
 - Redrawing segmentation
+- Daughter cell selection / drawing
+- Annotating track ends
 
 ## Installation
 
