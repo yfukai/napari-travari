@@ -77,5 +77,5 @@ show_error_codes = true
 show_error_context = true
 
 [build-system]
-requires = ["poetry-core @ git+https://github.com/python-poetry/poetry-core.git@master"]
+requires = ["poetry-core @ git+https://github.com/python-poetry/poetry-core.git@main"]
 build-backend = "poetry.core.masonry.api"
