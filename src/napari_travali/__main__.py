@@ -1,4 +1,4 @@
-#%%
+# %%
 """Command-line interface."""
 import io
 import logging
@@ -11,11 +11,11 @@ import napari
 import numpy as np
 import pandas as pd
 import zarr
+from _settings._consts import DF_DIVISIONS_COLUMNS
+from _settings._consts import DF_SEGMENTS_COLUMNS
+from _settings._consts import LOGGING_PATH
+from _utils._logging import logger
 
-from ._consts import DF_DIVISIONS_COLUMNS
-from ._consts import DF_SEGMENTS_COLUMNS
-from ._consts import LOGGING_PATH
-from ._logging import logger
 from ._viewer import TravaliViewer
 
 
@@ -63,8 +63,10 @@ def main(zarr_path, label_dataset_name, log_directory, persist) -> None:
 
     finalized_segment_ids = set(segments_ds.attrs["finalized_segment_ids"])
     candidate_segment_ids = set(segments_ds.attrs["candidate_segment_ids"])
-    termination_annotations = { int(k):str(v) 
-        for k,v in segments_ds.attrs.get("termination_annotations", {}).items()}
+    termination_annotations = {
+        int(k): str(v)
+        for k, v in segments_ds.attrs.get("termination_annotations", {}).items()
+    }
 
     target_Ts = sorted(label_ds.attrs["target_Ts"])
     assert all(np.array(target_Ts) < label.shape[0])

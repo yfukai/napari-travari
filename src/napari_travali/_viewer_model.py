@@ -7,18 +7,17 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import zarr
-
-from ._consts import DF_DIVISIONS_COLUMNS
-from ._consts import DF_SEGMENTS_COLUMNS
-from ._consts import NEW_LABEL_VALUE
-from ._consts import NOSEL_VALUE
-from ._gui_utils import ask_draw_label
-from ._gui_utils import ask_ok_or_not
-from ._gui_utils import choose_direction_by_mbox
-from ._gui_utils import choose_division_by_mbox
-from ._gui_utils import get_annotation_of_track_end
-from ._logging import log_error
-from ._logging import logger
+from _settings._consts import DF_DIVISIONS_COLUMNS
+from _settings._consts import DF_SEGMENTS_COLUMNS
+from _settings._consts import NEW_LABEL_VALUE
+from _settings._consts import NOSEL_VALUE
+from _utils._gui_utils import ask_draw_label
+from _utils._gui_utils import ask_ok_or_not
+from _utils._gui_utils import choose_direction_by_mbox
+from _utils._gui_utils import choose_division_by_mbox
+from _utils._gui_utils import get_annotation_of_track_end
+from _utils._logging import log_error
+from _utils._logging import logger
 
 
 class ViewerState(Enum):

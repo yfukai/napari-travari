@@ -1,11 +1,11 @@
 import napari
 import numpy as np
+from _settings._transitions import transitions
+from _utils._logging import log_error
+from _utils._logging import logger
 from dask import array as da
 from transitions import Machine
 
-from ._logging import log_error
-from ._logging import logger
-from ._transitions import transitions
 from ._viewer_model import ViewerModel
 from ._viewer_model import ViewerState
 
@@ -29,7 +29,6 @@ class TravaliViewer:
         termination_annotations,
         persist,
     ):
-
         self.zarr_path = zarr_path
         self.label_dataset_name = label_dataset_name
         self.data_chunks = data_chunks
@@ -39,21 +38,13 @@ class TravaliViewer:
         self.viewer = napari.Viewer()
         contrast_limits = np.percentile(np.array(image[0]).ravel(), (50, 98))
         self.viewer.add_image(image, contrast_limits=contrast_limits)
-        self.label_layer = self.viewer.add_labels(
-            label,
-            name="label",
-            cache=False
-        )
+        self.label_layer = self.viewer.add_labels(label, name="label", cache=False)
         self.sel_label_layer = self.viewer.add_labels(
-            da.zeros_like(label, dtype=np.uint8),
-            name="Selected label",
-            cache=False
+            da.zeros_like(label, dtype=np.uint8), name="Selected label", cache=False
         )
         self.sel_label_layer.contour = 3
         self.redraw_label_layer = self.viewer.add_labels(
-            np.zeros(label.shape[-3:], dtype=np.uint8),
-            name="Drawing",
-            cache=False
+            np.zeros(label.shape[-3:], dtype=np.uint8), name="Drawing", cache=False
         )
         self.finalized_label_layer = self.viewer.add_labels(
             da.zeros_like(label, dtype=np.uint8),
@@ -61,7 +52,7 @@ class TravaliViewer:
             # color ={1:"red"}, not working
             opacity=1.0,
             blending="opaque",
-            cache=False
+            cache=False,
         )
         self.finalized_label_layer.contour = 3
 
