@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from _settings._consts import DF_DIVISIONS_COLUMNS
-from _settings._consts import DF_SEGMENTS_COLUMNS
+from _settings._consts import DF_TRACKS_COLUMNS
 from _settings._consts import NEW_LABEL_VALUE
 from _settings._consts import NOSEL_VALUE
 from _utils._gui_utils import ask_draw_label
@@ -18,6 +18,7 @@ from _utils._gui_utils import choose_division_by_mbox
 from _utils._gui_utils import get_annotation_of_track_end
 from _utils._logging import log_error
 from _utils._logging import logger
+from skimage.util import map_array
 
 
 class ViewerState(Enum):
@@ -46,14 +47,19 @@ class ViewerModel:
 
     def __init__(
         self,
-        travali_viewer,
-        df_segments: pd.DataFrame,
+        viewer,
+        target_Ts,
+        label_layer,
+        redraw_label_layer,
+        sel_label_layer,
+        finalized_label_layer,
+        df_tracks: pd.DataFrame,
         df_divisions: pd.DataFrame,
         *,
-        new_segment_id: int,
+        new_track_id: int,
         new_label_value: int,
-        finalized_segment_ids: List[int],
-        candidate_segment_ids: List[int],
+        finalized_track_ids: List[int],
+        candidate_track_ids: List[int],
         termination_annotations: Dict[int, str],
     ):
         """Initialize the model
@@ -62,44 +68,45 @@ class ViewerModel:
         ----------
         travali_viewer : TravaliViewer
             the base TravaliViewer object
-        df_segments : pd.DataFrame
+        df_tracks : pd.DataFrame
             a dataframe containing the segment information
         df_divisions : pd.DataFrame
             a dataframe containing the division information
-        new_segment_id : int
+        new_track_id : int
             the id of the new segment
         new_label_value : int
             the value of the new label
-        finalized_segment_ids : List[int]
+        finalized_track_ids : List[int]
             the list of segment ids that have been finalized
-        candidate_segment_ids : List[int]
+        candidate_track_ids : List[int]
             the list of segment ids that are candidates for annotation
         termination_annotations : Dict[int,str]
-            the dict for association between segment_id and termination annotation
+            the dict for association between track_id and termination annotation
         """
         self.selected_label = None
-        self.segment_id = None
+        self.track_id = None
         self.frame_childs = None
         self.label_childs = None
         self.segment_labels = None
         self.label_edited = None
 
-        self.target_Ts = list(travali_viewer.target_Ts)
-        self.viewer = travali_viewer.viewer
-        self.label_layer = travali_viewer.label_layer
-        self.redraw_label_layer = travali_viewer.redraw_label_layer
-        self.sel_label_layer = travali_viewer.sel_label_layer
-        self.finalized_label_layer = travali_viewer.finalized_label_layer
+        self.target_Ts = list(target_Ts)
+        self.viewer = viewer
+        self.label_layer = label_layer
+        self.redraw_label_layer = redraw_label_layer
+        self.sel_label_layer = sel_label_layer
+        self.finalized_label_layer = finalized_label_layer
+
         self.termination_annotation = ""
         self.shape = self.label_layer.data.shape
         self.sizeT = self.label_layer.data.shape[0]
 
-        self.df_segments = df_segments
+        self.df_tracks = df_tracks
         self.df_divisions = df_divisions
-        self.new_segment_id = new_segment_id
+        self.new_track_id = new_track_id
         self.new_label_value = new_label_value
-        self.finalized_segment_ids = finalized_segment_ids
-        self.candidate_segment_ids = candidate_segment_ids
+        self.finalized_track_ids = finalized_track_ids
+        self.candidate_track_ids = candidate_track_ids
         self.termination_annotations = termination_annotations
         self.finalized_label_layer.data = self.label_layer.data.map_blocks(
             self.__label_to_finalized_label, dtype=np.uint8
@@ -141,6 +148,7 @@ class ViewerModel:
         self.redraw_label_layer.data = np.zeros_like(self.redraw_label_layer.data)
         self.redraw_label_layer.mode = "paint"
 
+    # functions to map label #
     @log_error
     def __label_to_selected_label_image(self, block, block_info=None):
         """Convert a block of label image to the selected label image."""
@@ -150,16 +158,16 @@ class ViewerModel:
         assert not self.label_childs is None
         if block_info is None or len(block_info) == 0:
             return None
-        location = block_info[0]["array-location"]
-        iT = location[0][0]
+        block_location = block_info[0]["array-location"]
+        iT = block_location[0][0]
         sel_label = (block == self.segment_labels[iT]).astype(np.uint8)
-        # reading from df_segments2
+        # reading from df_tracks2
         for j, (frame, label) in enumerate(zip(self.frame_childs, self.label_childs)):
             if iT == frame:
                 if np.isscalar(label):
                     sel_label[block == label] = j + 2
                 else:
-                    indices = [slice(loc[0], loc[1]) for loc in location]
+                    indices = [slice(loc[0], loc[1]) for loc in block_location]
                     sub_label = label[tuple(indices)[2:]]
                     sel_label[0, 0][sub_label] = j + 2
         return sel_label
@@ -173,31 +181,39 @@ class ViewerModel:
         location = block_info[0]["array-location"]
         frame = location[0][0]
         try:
-            segments_at_frame = self.df_segments.loc[frame]
+            segments_at_frame = self.df_tracks.loc[frame]
         except KeyError:
             return np.zeros_like(block, dtype=np.uint8)
 
-        finalized_labels_at_frame = segments_at_frame[
-            segments_at_frame["segment_id"].isin(self.finalized_segment_ids)
-        ].index.get_level_values("label")
-
-        candidate_labels_at_frame = segments_at_frame[
-            segments_at_frame["segment_id"].isin(self.candidate_segment_ids)
-        ].index.get_level_values("label")
-
-        label_finalized = (np.isin(block, np.array(finalized_labels_at_frame))).astype(
-            np.uint8
+        finalized_labels_at_frame = (
+            segments_at_frame[
+                segments_at_frame["track_id"].isin(self.finalized_track_ids)
+            ]
+            .index.get_level_values("label")
+            .to_list()
         )
-        label_candidate = (np.isin(block, np.array(candidate_labels_at_frame))).astype(
-            np.uint8
-        )
-        return label_finalized + 2 * label_candidate
 
+        candidate_labels_at_frame = (
+            segments_at_frame[
+                segments_at_frame["track_id"].isin(self.candidate_track_ids)
+            ]
+            .index.get_level_values("label")
+            .to_list()
+        )
+
+        input_vals = finalized_labels_at_frame + candidate_labels_at_frame
+        output_vals = [1] * len(finalized_labels_at_frame) + [2] * len(
+            candidate_labels_at_frame
+        )
+
+        return map_array(block, input_vals, output_vals)
+
+    # transition functions #
     @log_error
-    def select_track(self, frame, val, segment_id):
-        self.segment_id = segment_id
+    def select_track(self, frame, val, track_id):
+        self.track_id = track_id
         segment_labels = np.ones(self.sizeT, dtype=np.uint32) * NOSEL_VALUE
-        df = self.df_segments[self.df_segments["segment_id"] == segment_id]
+        df = self.df_tracks[self.df_tracks["track_id"] == track_id]
         frames = df.index.get_level_values("frame").values
         labels = df.index.get_level_values("label").values
         segment_labels[frames] = labels
@@ -207,8 +223,8 @@ class ViewerModel:
         self.original_segment_labels = segment_labels.copy()
         # used to rewrite track on exit
 
-        row = self.df_divisions[self.df_divisions["parent_segment_id"] == segment_id]
-        print("segment id:", segment_id)
+        row = self.df_divisions[self.df_divisions["parent_track_id"] == track_id]
+        print("segment id:", track_id)
         print(segment_labels)
         print(row)
         if len(row) == 1:
@@ -220,9 +236,10 @@ class ViewerModel:
         else:
             return
         print(self.frame_childs, self.label_childs)
-        self.sel_label_layer.data = self.label_layer.data.map_blocks(
-            self.__label_to_selected_label_image, dtype=np.uint8
-        )
+        self.sel_label_layer.data = [
+            d.map_blocks(self.__label_to_selected_label_image, dtype=np.uint8)
+            for d in self.label_layer.data
+        ]
 
     @log_error
     def label_redraw_enter_valid(self):
@@ -294,16 +311,16 @@ class ViewerModel:
             return True
 
     @log_error
-    def switch_track(self, frame, val, segment_id):
+    def switch_track(self, frame, val, track_id):
         direction = choose_direction_by_mbox(self.viewer)
 
         if not direction:
             return
         elif direction == "forward":
             print("forward ... ")
-            df = self.df_segments[
-                (self.df_segments["segment_id"] == segment_id)
-                & (self.df_segments.index.get_level_values("frame") >= frame)
+            df = self.df_tracks[
+                (self.df_tracks["track_id"] == track_id)
+                & (self.df_tracks.index.get_level_values("frame") >= frame)
             ]
             frames = df.index.get_level_values("frame").values
             labels = df.index.get_level_values("label").values
@@ -312,9 +329,7 @@ class ViewerModel:
             self.segment_labels[frames] = labels
             self.label_edited[frame:] = False
             # FIXME revert layer to original
-            row = self.df_divisions[
-                self.df_divisions["parent_segment_id"] == segment_id
-            ]
+            row = self.df_divisions[self.df_divisions["parent_track_id"] == track_id]
 
             if len(row) == 1:
                 self.frame_childs = row.iloc[0][["frame_child1", "frame_child2"]]
@@ -325,9 +340,9 @@ class ViewerModel:
             self.termination_annotation = ""
 
         elif direction == "backward":
-            df = self.df_segments[
-                (self.df_segments["segment_id"] == segment_id)
-                & (self.df_segments.index.get_level_values("frame") <= frame)
+            df = self.df_tracks[
+                (self.df_tracks["track_id"] == track_id)
+                & (self.df_tracks.index.get_level_values("frame") <= frame)
             ]
             frames = df.index.get_level_values("frame").values
             labels = df.index.get_level_values("label").values
@@ -372,7 +387,7 @@ class ViewerModel:
                 self.to_LABEL_SELECTED()
 
     @log_error
-    def daughter_select(self, frame, val, segment_id):
+    def daughter_select(self, frame, val, track_id):
         if frame == self.frame_child_candidate:
             self.label_child_candidates.append(int(val))
         else:
@@ -406,7 +421,7 @@ class ViewerModel:
     def mark_termination(self):
         iT = self.viewer.dims.current_step[0]
         termination_annotation, res = get_annotation_of_track_end(
-            self.viewer, self.termination_annotations.get(self.segment_id, "")
+            self.viewer, self.termination_annotations.get(self.track_id, "")
         )
         if res:
             logger.info("marking termination: {termination_annotation}")
@@ -418,7 +433,7 @@ class ViewerModel:
 
     @log_error
     def finalize_track(self):
-        segment_id = self.segment_id
+        track_id = self.track_id
         segment_labels = self.segment_labels
 
         frame_childs = self.frame_childs.copy()
@@ -428,9 +443,9 @@ class ViewerModel:
         frame_labels = list(enumerate(segment_labels)) + list(
             zip(frame_childs, label_childs)
         )
-        relevant_segment_ids = np.unique(
+        relevant_track_ids = np.unique(
             [
-                self.df_segments.loc[(frame, label), "segment_id"]
+                self.df_tracks.loc[(frame, label), "track_id"]
                 for frame, label in frame_labels
                 if np.isscalar(label)
                 and label != NOSEL_VALUE
@@ -439,12 +454,12 @@ class ViewerModel:
         )
 
         last_frames = {}
-        for relevant_segment_id in relevant_segment_ids:
-            df = self.df_segments[self.df_segments["segment_id"] == relevant_segment_id]
+        for relevant_track_id in relevant_track_ids:
+            df = self.df_tracks[self.df_tracks["track_id"] == relevant_track_id]
             if len(df) == 0:
                 continue
             df = df.sort_index(level="frame")
-            last_frames[relevant_segment_id] = df.index.get_level_values("frame")[-1]
+            last_frames[relevant_track_id] = df.index.get_level_values("frame")[-1]
             if len(df) == 1:
                 frame, label = df.index[0]
                 segment_graph.add_node((frame, label))
@@ -458,7 +473,7 @@ class ViewerModel:
             if label in (NOSEL_VALUE, NEW_LABEL_VALUE):
                 continue
             segment_graph.remove_node((frame, label))
-            self.df_segments.loc[(frame, label), "segment_id"] = segment_id
+            self.df_tracks.loc[(frame, label), "track_id"] = track_id
 
         for frame, label in zip(frame_childs, label_childs):
             if not np.isscalar(label):
@@ -475,21 +490,19 @@ class ViewerModel:
         # relavel divided tracks
         for subsegment in nx.connected_components(segment_graph):
             frame_labels = sorted(subsegment, key=lambda x: x[0])
-            original_segment_id = self.df_segments.loc[frame_labels, "segment_id"]
-            assert np.all(original_segment_id.iloc[0] == original_segment_id)
-            original_segment_id = original_segment_id.iloc[0]
-            last_frame = last_frames[original_segment_id]
+            original_track_id = self.df_tracks.loc[frame_labels, "track_id"]
+            assert np.all(original_track_id.iloc[0] == original_track_id)
+            original_track_id = original_track_id.iloc[0]
+            last_frame = last_frames[original_track_id]
             frames, _ = zip(*frame_labels)
 
-            self.df_segments.loc[frame_labels, "segment_id"] = self.new_segment_id
+            self.df_tracks.loc[frame_labels, "track_id"] = self.new_track_id
             if np.any(frames == last_frame):
-                ind = self.df_divisions["parent_segment_id"] == original_segment_id
+                ind = self.df_divisions["parent_track_id"] == original_track_id
                 if np.any(ind):
                     assert np.sum(ind) == 1
-                    self.df_divisions.loc[
-                        ind, "parent_segment_id"
-                    ] = self.new_segment_id
-            self.new_segment_id += 1
+                    self.df_divisions.loc[ind, "parent_track_id"] = self.new_track_id
+            self.new_track_id += 1
 
         def __draw_label(label_image, frame, label):
             # XXX tenative imprementation, faster if directly edit the zarr?
@@ -519,8 +532,8 @@ class ViewerModel:
                 label = self.new_label_value
 
                 # FIXME: rewrite with concat
-                self.df_segments = self.df_segments.append(
-                    pd.Series({"segment_id": segment_id}, name=(redrawn_frame, label))
+                self.df_tracks = self.df_tracks.append(
+                    pd.Series({"track_id": track_id}, name=(redrawn_frame, label))
                 )
                 self.new_label_value += 1
 
@@ -530,20 +543,20 @@ class ViewerModel:
                 label,
             )
             # set bounding box
-            self.df_segments.loc[(redrawn_frame, label), "bbox_y0"] = bboxes[0][0]
-            self.df_segments.loc[(redrawn_frame, label), "bbox_y1"] = bboxes[0][1]
-            self.df_segments.loc[(redrawn_frame, label), "bbox_x0"] = bboxes[1][0]
-            self.df_segments.loc[(redrawn_frame, label), "bbox_x1"] = bboxes[1][1]
+            self.df_tracks.loc[(redrawn_frame, label), "bbox_y0"] = bboxes[0][0]
+            self.df_tracks.loc[(redrawn_frame, label), "bbox_y1"] = bboxes[0][1]
+            self.df_tracks.loc[(redrawn_frame, label), "bbox_x0"] = bboxes[1][0]
+            self.df_tracks.loc[(redrawn_frame, label), "bbox_x1"] = bboxes[1][1]
 
-        ind = self.df_divisions["parent_segment_id"] == segment_id
+        ind = self.df_divisions["parent_track_id"] == track_id
         if np.any(ind):
             assert np.sum(ind) == 1
             self.df_divisions = self.df_divisions[~ind]
-            self.new_segment_id += 1
+            self.new_track_id += 1
 
         if len(frame_childs) > 0 and len(label_childs) > 0:
             assert len(frame_childs) == 2 and len(label_childs) == 2
-            division_row = {"parent_segment_id": segment_id}
+            division_row = {"parent_track_id": track_id}
             for j, (frame_child, label_child) in enumerate(
                 zip(frame_childs, label_childs)
             ):
@@ -551,8 +564,8 @@ class ViewerModel:
                 if np.isscalar(label_child):
                     # means the daughter was selected
                     division_row[f"label_child{j+1}"] = label_child
-                    segment_id_child = self.df_segments.loc[
-                        (frame_child, label_child), "segment_id"
+                    track_id_child = self.df_tracks.loc[
+                        (frame_child, label_child), "track_id"
                     ]
                 else:
                     bboxes = __draw_label(
@@ -560,10 +573,10 @@ class ViewerModel:
                     )
                     division_row[f"label_child{j+1}"] = self.new_label_value
                     # FIXME: rewrite with concat
-                    self.df_segments = self.df_segments.append(
+                    self.df_tracks = self.df_tracks.append(
                         pd.Series(
                             {
-                                "segment_id": self.new_segment_id,
+                                "track_id": self.new_track_id,
                                 "bbox_y0": bboxes[0][0],
                                 "bbox_y1": bboxes[0][1],
                                 "bbox_x0": bboxes[1][0],
@@ -572,20 +585,20 @@ class ViewerModel:
                             name=(frame_child, self.new_label_value),
                         )
                     )
-                    segment_id_child = self.new_segment_id
-                    self.new_segment_id += 1
+                    track_id_child = self.new_track_id
+                    self.new_track_id += 1
                     self.new_label_value += 1
-                if not segment_id_child in self.finalized_segment_ids:
-                    logger.info(f"candidate adding ... {segment_id_child}")
-                    self.candidate_segment_ids.add(segment_id_child)
+                if not track_id_child in self.finalized_track_ids:
+                    logger.info(f"candidate adding ... {track_id_child}")
+                    self.candidate_track_ids.add(track_id_child)
             # FIXME: rewrite with concat
             self.df_divisions = self.df_divisions.append(
                 division_row, ignore_index=True
             )
 
-        self.finalized_segment_ids.add(segment_id)
-        self.candidate_segment_ids.discard(segment_id)
-        self.termination_annotations[segment_id] = self.termination_annotation
+        self.finalized_track_ids.add(track_id)
+        self.candidate_track_ids.discard(track_id)
+        self.termination_annotations[track_id] = self.termination_annotation
 
         self.finalized_label_layer.data = self.label_layer.data.map_blocks(
             self.__label_to_finalized_label, dtype=np.uint8
@@ -628,18 +641,18 @@ class ViewerModel:
 
         logger.info("saving segments...")
 
-        segments_group = zarr_file["df_segments"]
+        segments_group = zarr_file["df_tracks"]
         if label_dataset_name in segments_group.keys():
             del segments_group[label_dataset_name]
         segments_ds = segments_group.create_dataset(
             label_dataset_name,
-            data=self.df_segments.reset_index()[DF_SEGMENTS_COLUMNS].astype(int).values,
+            data=self.df_tracks.reset_index()[DF_TRACKS_COLUMNS].astype(int).values,
         )
-        segments_ds.attrs["finalized_segment_ids"] = list(
-            map(int, self.finalized_segment_ids)
+        segments_ds.attrs["finalized_track_ids"] = list(
+            map(int, self.finalized_track_ids)
         )
-        segments_ds.attrs["candidate_segment_ids"] = list(
-            map(int, self.candidate_segment_ids)
+        segments_ds.attrs["candidate_track_ids"] = list(
+            map(int, self.candidate_track_ids)
         )
         segments_ds.attrs["termination_annotations"] = {
             int(k): str(v) for k, v in self.termination_annotations.items()

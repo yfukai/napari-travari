@@ -47,10 +47,10 @@ Currently we accept segmented / tracked data in the following format.
    -  ``Dataset`` named ``image`` … 5-dim dataset with dimensional order ``TCZYX``
    -  ``Group`` named ``labels``
       -  ``Dataset`` named ``original`` … 4-dim dataset with dimensional order ``TZYX``
-         -  ``attr`` named ``finalized_segment_ids``
-         -  ``attr`` named ``candidate_segment_ids``
+         -  ``attr`` named ``finalized_track_ids``
+         -  ``attr`` named ``candidate_track_ids``
          -  ``attr`` named ``target_Ts``
-      -  ``Dataset`` named ``df_segments``
+      -  ``Dataset`` named ``df_tracks``
       -  ``Dataset`` named ``df_divisions``
 -->
 
